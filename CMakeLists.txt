@@ -26,7 +26,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "TSan" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|C
     add_link_options(-fsanitize=thread)
 endif()
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Concurrent)
+find_package(Qt6 6.4 REQUIRED COMPONENTS Core Gui Widgets Concurrent)
 
 add_library(papercutter_core STATIC
     src/core/compositionstate.cpp
@@ -64,7 +64,7 @@ install(FILES packaging/icons/hicolor/512x512/apps/lgl-papercutter.png
     DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps)
 
 if(BUILD_TESTING)
-    find_package(Qt6 6.5 REQUIRED COMPONENTS Test)
+    find_package(Qt6 6.4 REQUIRED COMPONENTS Test)
     qt_add_executable(compositionstate_test tests/compositionstate_test.cpp)
     target_link_libraries(compositionstate_test PRIVATE papercutter_core Qt6::Test)
     add_test(NAME compositionstate COMMAND compositionstate_test)

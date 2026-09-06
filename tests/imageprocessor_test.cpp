@@ -1,5 +1,6 @@
 #include "processing/imageprocessor.h"
 
+#include <QFile>
 #include <QImage>
 #include <QTemporaryDir>
 #include <QTest>
@@ -12,10 +13,36 @@ class ImageProcessorTest final : public QObject {
     Q_OBJECT
 
 private slots:
+    void packagedBackendOverridesHostDiscovery();
     void fillsTargetWithoutGaps();
     void savesACopyWithoutChangingTheOriginal();
     void refusesToReplaceTheOriginal();
 };
+
+void ImageProcessorTest::packagedBackendOverridesHostDiscovery()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString executablePath = directory.filePath(QStringLiteral("convert"));
+    QFile executable(executablePath);
+    QVERIFY(executable.open(QIODevice::WriteOnly));
+    executable.write("#!/bin/sh\nexit 0\n");
+    executable.close();
+    QVERIFY(QFile::setPermissions(executablePath,
+                                  QFileDevice::ReadOwner | QFileDevice::WriteOwner
+                                      | QFileDevice::ExeOwner));
+
+    const bool wasSet = qEnvironmentVariableIsSet("PAPERCUTTER_IMAGEMAGICK");
+    const QByteArray previousValue = qgetenv("PAPERCUTTER_IMAGEMAGICK");
+    qputenv("PAPERCUTTER_IMAGEMAGICK", executablePath.toUtf8());
+    const QString selectedExecutable = ImageProcessor::backendExecutable();
+    if (wasSet)
+        qputenv("PAPERCUTTER_IMAGEMAGICK", previousValue);
+    else
+        qunsetenv("PAPERCUTTER_IMAGEMAGICK");
+
+    QCOMPARE(selectedExecutable, executablePath);
+}
 
 void ImageProcessorTest::fillsTargetWithoutGaps()
 {

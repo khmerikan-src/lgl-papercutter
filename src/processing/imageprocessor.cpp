@@ -20,7 +20,13 @@ bool ImageProcessor::isBackendAvailable()
 
 QString ImageProcessor::backendExecutable()
 {
-    return QStandardPaths::findExecutable(QStringLiteral("magick"));
+    const QString packagedExecutable = qEnvironmentVariable("PAPERCUTTER_IMAGEMAGICK");
+    if (!packagedExecutable.isEmpty() && QFileInfo(packagedExecutable).isExecutable())
+        return packagedExecutable;
+    const QString modernExecutable = QStandardPaths::findExecutable(QStringLiteral("magick"));
+    if (!modernExecutable.isEmpty())
+        return modernExecutable;
+    return QStandardPaths::findExecutable(QStringLiteral("convert"));
 }
 
 ProcessingResult ImageProcessor::process(const ProcessingRequest &request) const
@@ -37,7 +43,7 @@ ProcessingResult ImageProcessor::process(const ProcessingRequest &request) const
     if (!isBackendAvailable())
         return {false, job.sourcePath, {},
                 QStringLiteral("backend"),
-                QStringLiteral("ImageMagick is not installed or magick is not in PATH.")};
+                QStringLiteral("ImageMagick is not installed; neither magick nor convert is in PATH.")};
 
     if (request.destinationPath.isEmpty())
         return {false, job.sourcePath, {}, QStringLiteral("validation"),
