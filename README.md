@@ -110,10 +110,19 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete release history.
 
 ## Build from Source
 
+Papercutter requires Qt 6.4 or newer and supports both ImageMagick 7's
+`magick` command and ImageMagick 6's `convert` command.
+
 Install the dependencies on Fedora 44:
 
 ```bash
 sudo dnf install cmake gcc-c++ qt6-qtbase-devel ImageMagick
+```
+
+On Ubuntu 24.04 or Linux Mint 22:
+
+```bash
+sudo apt install build-essential cmake qt6-base-dev qt6-image-formats-plugins imagemagick
 ```
 
 Clone, build, and test:

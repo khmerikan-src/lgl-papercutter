@@ -2,6 +2,14 @@
 
 All notable user-facing changes to LGL Papercutter are recorded here.
 
+## Unreleased
+
+### Fixed
+
+- Allowed source builds with Qt 6.4, including Ubuntu 24.04 and Linux Mint 22.
+- Added support for ImageMagick 6's `convert` command while retaining support
+  for ImageMagick 7's `magick` command.
+
 ## 0.3.0 — 2026-08-24
 
 ### Added
