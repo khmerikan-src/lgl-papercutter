@@ -5,7 +5,7 @@
 **A simple way to modify wallpapers to make them a better fit for your desktop.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/release-0.3.0-purple)](CHANGELOG.md)
+[![Release](https://img.shields.io/badge/release-0.3.1-purple)](CHANGELOG.md)
 [![Fedora](https://img.shields.io/badge/Fedora-44-blue?logo=fedora&logoColor=white)](https://fedoraproject.org)
 [![AppImage](https://img.shields.io/badge/AppImage-available-brightgreen?logo=appimage&logoColor=white)](https://github.com/linuxgamerlife/lgl-papercutter/releases)
 [![RPM](https://img.shields.io/badge/RPM-available-brightgreen?logo=redhat&logoColor=white)](https://github.com/linuxgamerlife/lgl-papercutter/releases)
@@ -75,7 +75,7 @@ confirmation.
 
 ## Install
 
-The current release is **0.3.0**.
+The current release is **0.3.1**.
 
 ### Recommended — Fedora COPR
 
@@ -98,13 +98,15 @@ The project can also be built directly from source.
 
 ---
 
-## What's New in 0.3.0
+## What's New in 0.3.1
 
-- Comprehensive built-in Help explaining the controls and complete workflow
-- Clear guidance for staged edits, multi-selection, numbered exports, and file safety
-- About dialog showing the app version, project page, author, MIT licence, and
-  Ko-fi support link
-- Help and About entries in both the full menu bar and the always-visible More menu
+- Per-image JPEG and WebP output quality with a live estimated output file size
+- Editable Description, Artist, Copyright, and Comment metadata for each image
+- A zoom **Reset** button and a 5120 × 1440 super-ultrawide preset
+- Sequential export numbering that fills gaps in existing numbered files
+- The system primary monitor is now the default target resolution
+- Indexed PNG sources stay palette-compressed instead of growing much larger
+- Source builds now support Qt 6.4 and ImageMagick 6 (Ubuntu 24.04, Linux Mint 22)
 
 See [CHANGELOG.md](CHANGELOG.md) for the complete release history.
 

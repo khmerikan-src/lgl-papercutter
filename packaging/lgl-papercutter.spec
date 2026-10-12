@@ -1,5 +1,5 @@
 Name:           lgl-papercutter
-Version:        0.3.0
+Version:        0.3.1
 Release:        1%{?dist}
 Summary:        Compose wallpapers for a chosen desktop resolution
 
@@ -57,6 +57,13 @@ appstream-util validate-relax --nonet \
 %{_datadir}/icons/hicolor/512x512/apps/lgl-papercutter.png
 
 %changelog
+* Mon Oct 12 2026 LinuxGamerLife - 0.3.1-1
+- Add per-image JPEG and WebP output quality with estimated output file size
+- Add editable Description, Artist, Copyright, and Comment metadata
+- Add a zoom Reset button, a 5120x1440 preset, and gap-aware export numbering
+- Default to the system primary monitor and keep indexed PNGs palette-compressed
+- Support Qt 6.4 and ImageMagick 6 source builds
+
 * Mon Aug 24 2026 LinuxGamerLife - 0.3.0-1
 - Add in-app Help covering controls, staged editing, exports, and file safety
 - Add an About dialog with project, author, license, and donation links

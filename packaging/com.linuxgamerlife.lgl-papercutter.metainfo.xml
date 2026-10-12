@@ -18,6 +18,16 @@
   <url type="homepage">https://github.com/linuxgamerlife/lgl-papercutter</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.3.1" date="2026-10-12">
+      <description>
+        <p>
+          Adds per-image output quality with an estimated output size, editable
+          image metadata, a zoom Reset button, a 5120x1440 preset, and
+          gap-aware export numbering. Defaults to the primary monitor and keeps
+          indexed PNG exports compact.
+        </p>
+      </description>
+    </release>
     <release version="0.3.0" date="2026-08-24">
       <description>
         <p>

@@ -2,7 +2,7 @@
 
 All notable user-facing changes to LGL Papercutter are recorded here.
 
-## Unreleased
+## 0.3.1 — 2026-10-12
 
 ### Added
 
