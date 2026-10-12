@@ -9,7 +9,9 @@
 #include <QVector>
 
 class QComboBox;
+class QGroupBox;
 class QLabel;
+class QLineEdit;
 class QListWidget;
 class QPushButton;
 class QSlider;
@@ -50,6 +52,7 @@ private:
     void loadCurrentJob(int row);
     void applyTargetResolutionToSelection();
     void updateCurrentZoomFromControl();
+    void updateCurrentMetadataFromControls();
     void syncResolutionControlsToSelection();
     void updateQualityLabel();
 
@@ -60,6 +63,11 @@ private:
     QComboBox *m_resolution{nullptr};
     QSpinBox *m_width{nullptr};
     QSpinBox *m_height{nullptr};
+    QGroupBox *m_metadataGroup{nullptr};
+    QLineEdit *m_description{nullptr};
+    QLineEdit *m_artist{nullptr};
+    QLineEdit *m_copyright{nullptr};
+    QLineEdit *m_comment{nullptr};
     QSlider *m_zoom{nullptr};
     QLabel *m_qualityLabel{nullptr};
     QLabel *m_sourceLabel{nullptr};

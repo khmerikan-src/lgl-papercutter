@@ -56,6 +56,7 @@ confirmation.
 | **Zoom control** | Choose how tightly the wallpaper is cropped |
 | **Resolution targets** | Use detected displays, presets, or custom width and height |
 | **Staged compositions** | Retain an independent resolution, crop, position, and zoom for every queued image |
+| **Image attributes** | View and edit Description, Artist, Copyright, and Comment metadata per image |
 | **Multi-image resolution changes** | Apply a target resolution to any selection or the entire queue |
 | **Portrait and ultrawide support** | Compose wallpapers for horizontal or vertical displays |
 | **Image queue** | Review several wallpapers in one session |
@@ -116,13 +117,13 @@ Papercutter requires Qt 6.4 or newer and supports both ImageMagick 7's
 Install the dependencies on Fedora 44:
 
 ```bash
-sudo dnf install cmake gcc-c++ qt6-qtbase-devel ImageMagick
+sudo dnf install cmake gcc-c++ qt6-qtbase-devel ImageMagick exiv2
 ```
 
 On Ubuntu 24.04 or Linux Mint 22:
 
 ```bash
-sudo apt install build-essential cmake qt6-base-dev qt6-image-formats-plugins imagemagick
+sudo apt install build-essential cmake qt6-base-dev qt6-image-formats-plugins imagemagick exiv2
 ```
 
 Clone, build, and test:

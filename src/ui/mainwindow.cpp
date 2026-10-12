@@ -19,7 +19,9 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFutureWatcher>
+#include <QFormLayout>
 #include <QGuiApplication>
+#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QImageReader>
@@ -27,6 +29,7 @@
 #include <QLabel>
 #include <QKeySequence>
 #include <QListWidget>
+#include <QLineEdit>
 #include <QMenuBar>
 #include <QMenu>
 #include <QMessageBox>
@@ -320,6 +323,28 @@ void MainWindow::buildUi()
     dimensions->addWidget(m_height);
     controlsLayout->addLayout(dimensions);
 
+    m_metadataGroup = new QGroupBox(QStringLiteral("Image attributes"), controls);
+    auto *metadataLayout = new QFormLayout(m_metadataGroup);
+    m_description = new QLineEdit(m_metadataGroup);
+    m_artist = new QLineEdit(m_metadataGroup);
+    m_copyright = new QLineEdit(m_metadataGroup);
+    m_comment = new QLineEdit(m_metadataGroup);
+    m_description->setPlaceholderText(QStringLiteral("Image description"));
+    m_artist->setPlaceholderText(QStringLiteral("Creator or photographer"));
+    m_copyright->setPlaceholderText(QStringLiteral("Copyright notice"));
+    m_comment->setPlaceholderText(QStringLiteral("Comment"));
+    metadataLayout->addRow(QStringLiteral("Description"), m_description);
+    metadataLayout->addRow(QStringLiteral("Artist"), m_artist);
+    metadataLayout->addRow(QStringLiteral("Copyright"), m_copyright);
+    metadataLayout->addRow(QStringLiteral("Comment"), m_comment);
+    m_metadataGroup->setEnabled(false);
+    if (ImageProcessor::metadataExecutable().isEmpty()) {
+        m_metadataGroup->setTitle(QStringLiteral("Image attributes (Exiv2 required)"));
+        m_metadataGroup->setToolTip(
+            QStringLiteral("Install Exiv2 to view and edit image attributes."));
+    }
+    controlsLayout->addWidget(m_metadataGroup);
+
     controlsLayout->addSpacing(12);
     controlsLayout->addWidget(new QLabel(QStringLiteral("<b>Zoom</b>"), controls));
     auto *zoomRow = new QHBoxLayout;
@@ -365,6 +390,10 @@ void MainWindow::buildUi()
             this, &MainWindow::applyTargetResolutionToSelection);
     connect(m_zoom, &QSlider::valueChanged,
             this, &MainWindow::updateCurrentZoomFromControl);
+    for (QLineEdit *field : {m_description, m_artist, m_copyright, m_comment}) {
+        connect(field, &QLineEdit::textEdited,
+                this, &MainWindow::updateCurrentMetadataFromControls);
+    }
     connect(resetZoomButton, &QToolButton::clicked, this, [this] {
         m_zoom->setValue(100);
     });
@@ -505,6 +534,7 @@ void MainWindow::enqueuePaths(const QStringList &paths)
         job.sourcePath = path;
         job.sourceSize = size;
         job.composition.targetSize = {m_width->value(), m_height->value()};
+        job.metadata = ImageProcessor::readMetadata(path);
         m_jobs.push_back(job);
         m_queue->addItem(job.displayName());
         queuedPaths.insert(path);
@@ -590,6 +620,11 @@ void MainWindow::removeJobRows(const QSet<int> &rows)
 
     if (m_jobs.isEmpty()) {
         m_canvas->setImage({});
+        m_metadataGroup->setEnabled(false);
+        m_description->clear();
+        m_artist->clear();
+        m_copyright->clear();
+        m_comment->clear();
         updateQualityLabel();
     } else {
         loadCurrentJob(m_queue->currentRow());
@@ -970,6 +1005,11 @@ void MainWindow::loadCurrentJob(const int row)
     if (row < 0 || row >= m_jobs.size()) {
         m_canvas->setImage({});
         m_sourceLabel->setText(QStringLiteral("Source: no image selected"));
+        m_metadataGroup->setEnabled(false);
+        m_description->clear();
+        m_artist->clear();
+        m_copyright->clear();
+        m_comment->clear();
         return;
     }
 
@@ -990,6 +1030,11 @@ void MainWindow::loadCurrentJob(const int row)
     m_width->setValue(job.composition.targetSize.width());
     m_height->setValue(job.composition.targetSize.height());
     m_zoom->setValue(qRound(job.composition.zoom * 100.0));
+    m_description->setText(job.metadata.description);
+    m_artist->setText(job.metadata.artist);
+    m_copyright->setText(job.metadata.copyright);
+    m_comment->setText(job.metadata.comment);
+    m_metadataGroup->setEnabled(!ImageProcessor::metadataExecutable().isEmpty());
     m_updatingControls = false;
     syncResolutionControlsToSelection();
     updateQualityLabel();
@@ -1026,6 +1071,22 @@ void MainWindow::updateCurrentZoomFromControl()
     m_jobs[row].composition.zoom = m_zoom->value() / 100.0;
     m_canvas->setComposition(m_jobs[row].composition);
     updateQualityLabel();
+}
+
+void MainWindow::updateCurrentMetadataFromControls()
+{
+    if (m_updatingControls)
+        return;
+    const int row = m_queue->currentRow();
+    if (row < 0 || row >= m_jobs.size())
+        return;
+
+    ImageJob &job = m_jobs[row];
+    job.metadata.description = m_description->text();
+    job.metadata.artist = m_artist->text();
+    job.metadata.copyright = m_copyright->text();
+    job.metadata.comment = m_comment->text();
+    job.metadataEdited = true;
 }
 
 void MainWindow::syncResolutionControlsToSelection()

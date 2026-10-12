@@ -7,6 +7,19 @@
 
 namespace papercutter {
 
+struct ImageMetadata {
+    QString description;
+    QString artist;
+    QString copyright;
+    QString comment;
+
+    bool isEmpty() const
+    {
+        return description.isEmpty() && artist.isEmpty()
+            && copyright.isEmpty() && comment.isEmpty();
+    }
+};
+
 enum class JobStatus {
     AwaitingReview,
     Ready,
@@ -20,6 +33,8 @@ struct ImageJob {
     QString sourcePath;
     QSize sourceSize;
     CompositionState composition;
+    ImageMetadata metadata;
+    bool metadataEdited{false};
     JobStatus status{JobStatus::AwaitingReview};
     QString errorMessage;
 
@@ -27,4 +42,3 @@ struct ImageJob {
 };
 
 } // namespace papercutter
-

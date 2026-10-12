@@ -13,6 +13,77 @@
 
 namespace papercutter {
 
+namespace {
+
+struct MetadataField {
+    const char *key;
+    QString ImageMetadata::*member;
+};
+
+constexpr MetadataField metadataFields[] = {
+    {"Exif.Image.ImageDescription", &ImageMetadata::description},
+    {"Exif.Image.Artist", &ImageMetadata::artist},
+    {"Exif.Image.Copyright", &ImageMetadata::copyright},
+    {"Exif.Photo.UserComment", &ImageMetadata::comment},
+};
+
+QString metadataValue(const QString &output, const QString &key)
+{
+    const QString prefix = key + QLatin1Char(' ');
+    for (const QString &line : output.split(QLatin1Char('\n'))) {
+        if (!line.startsWith(key))
+            continue;
+        QString value = line.mid(prefix.size()).trimmed();
+        if (key == QStringLiteral("Exif.Photo.UserComment")
+            && value.startsWith(QStringLiteral("charset=Unicode ")))
+            value.remove(0, 16);
+        return value;
+    }
+    return {};
+}
+
+bool writeMetadata(const QString &executable, const QString &path,
+                   const ImageMetadata &metadata, QString &errorMessage)
+{
+    QStringList arguments;
+    for (const MetadataField &field : metadataFields) {
+        const QString key = QString::fromLatin1(field.key);
+        const QString value = metadata.*(field.member);
+        QString command;
+        if (value.isEmpty()) {
+            command = QStringLiteral("del %1").arg(key);
+        } else if (key == QStringLiteral("Exif.Photo.UserComment")) {
+            command = QStringLiteral("set %1 charset=Unicode %2").arg(key, value);
+        } else {
+            command = QStringLiteral("set %1 Ascii %2").arg(key, value);
+        }
+        arguments << QStringLiteral("-M") << command;
+    }
+    arguments << path;
+
+    QProcess process;
+    process.start(executable, arguments);
+    if (!process.waitForStarted(5000)) {
+        errorMessage = QStringLiteral("Exiv2 could not be started.");
+        return false;
+    }
+    if (!process.waitForFinished(30000)) {
+        process.kill();
+        process.waitForFinished();
+        errorMessage = QStringLiteral("Exiv2 timed out while saving image attributes.");
+        return false;
+    }
+    if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
+        errorMessage = QString::fromUtf8(process.readAllStandardError()).trimmed();
+        if (errorMessage.isEmpty())
+            errorMessage = QStringLiteral("Exiv2 could not save the image attributes.");
+        return false;
+    }
+    return true;
+}
+
+} // namespace
+
 bool ImageProcessor::isBackendAvailable()
 {
     return !backendExecutable().isEmpty();
@@ -27,6 +98,37 @@ QString ImageProcessor::backendExecutable()
     if (!modernExecutable.isEmpty())
         return modernExecutable;
     return QStandardPaths::findExecutable(QStringLiteral("convert"));
+}
+
+QString ImageProcessor::metadataExecutable()
+{
+    return QStandardPaths::findExecutable(QStringLiteral("exiv2"));
+}
+
+ImageMetadata ImageProcessor::readMetadata(const QString &path)
+{
+    ImageMetadata metadata;
+    const QString executable = metadataExecutable();
+    if (executable.isEmpty() || path.isEmpty())
+        return metadata;
+
+    QStringList arguments;
+    for (const MetadataField &field : metadataFields)
+        arguments << QStringLiteral("-K") << QString::fromLatin1(field.key);
+    arguments << QStringLiteral("-Pkt") << path;
+
+    QProcess process;
+    process.start(executable, arguments);
+    if (!process.waitForStarted(5000) || !process.waitForFinished(30000)
+        || process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
+        return metadata;
+
+    const QString output = QString::fromUtf8(process.readAllStandardOutput());
+    for (const MetadataField &field : metadataFields) {
+        const QString key = QString::fromLatin1(field.key);
+        metadata.*(field.member) = metadataValue(output, key);
+    }
+    return metadata;
 }
 
 ProcessingResult ImageProcessor::process(const ProcessingRequest &request) const
@@ -126,6 +228,16 @@ ProcessingResult ImageProcessor::process(const ProcessingRequest &request) const
         const QString diagnostic = QString::fromUtf8(process.readAllStandardError()).trimmed();
         return {false, job.sourcePath, outputPath, QStringLiteral("render"),
                 diagnostic.isEmpty() ? QStringLiteral("ImageMagick failed.") : diagnostic};
+    }
+
+    if (job.metadataEdited || !job.metadata.isEmpty()) {
+        const QString executable = metadataExecutable();
+        if (executable.isEmpty())
+            return {false, job.sourcePath, outputPath, QStringLiteral("metadata"),
+                    QStringLiteral("Exiv2 is required to save image attributes.")};
+        QString metadataError;
+        if (!writeMetadata(executable, temporaryPath, job.metadata, metadataError))
+            return {false, job.sourcePath, outputPath, QStringLiteral("metadata"), metadataError};
     }
 
     QImageReader outputReader(temporaryPath);

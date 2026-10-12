@@ -24,6 +24,8 @@ class ImageProcessor final {
 public:
     static bool isBackendAvailable();
     static QString backendExecutable();
+    static QString metadataExecutable();
+    static ImageMetadata readMetadata(const QString &path);
     ProcessingResult process(const ProcessingRequest &request) const;
 };
 

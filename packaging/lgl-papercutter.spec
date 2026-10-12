@@ -17,9 +17,11 @@ BuildRequires:  qt6-qtbase-devel >= 6.5
 BuildRequires:  desktop-file-utils
 BuildRequires:  libappstream-glib
 BuildRequires:  ImageMagick
+BuildRequires:  exiv2
 Requires:       qt6-qtbase >= 6.5
 Requires:       qt6-qtimageformats
 Requires:       ImageMagick
+Requires:       exiv2
 
 %description
 LGL Papercutter is a local desktop application for composing and processing

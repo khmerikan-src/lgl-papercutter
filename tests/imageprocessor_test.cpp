@@ -15,6 +15,7 @@ class ImageProcessorTest final : public QObject {
 private slots:
     void packagedBackendOverridesHostDiscovery();
     void fillsTargetWithoutGaps();
+    void writesEditedMetadataToExport();
     void savesACopyWithoutChangingTheOriginal();
     void refusesToReplaceTheOriginal();
 };
@@ -66,6 +67,40 @@ void ImageProcessorTest::fillsTargetWithoutGaps()
     QVERIFY2(result.succeeded, qPrintable(result.errorMessage));
     QCOMPARE(QImage(destinationPath).size(), QSize(160, 90));
     QCOMPARE(QImage(sourcePath).size(), QSize(60, 120));
+}
+
+void ImageProcessorTest::writesEditedMetadataToExport()
+{
+    if (!ImageProcessor::isBackendAvailable())
+        QSKIP("ImageMagick is not available");
+    if (ImageProcessor::metadataExecutable().isEmpty())
+        QSKIP("Exiv2 is not available");
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString sourcePath = directory.filePath(QStringLiteral("source.jpg"));
+    const QString destinationPath = directory.filePath(QStringLiteral("output.jpg"));
+    QImage source(120, 80, QImage::Format_RGB32);
+    source.fill(Qt::yellow);
+    QVERIFY(source.save(sourcePath));
+
+    ImageJob job;
+    job.sourcePath = sourcePath;
+    job.sourceSize = source.size();
+    job.composition.targetSize = {60, 40};
+    job.metadata.description = QStringLiteral("Mountain sunset");
+    job.metadata.artist = QStringLiteral("Test Artist");
+    job.metadata.copyright = QStringLiteral("Copyright 2026");
+    job.metadata.comment = QStringLiteral("Edited in Papercutter");
+    job.metadataEdited = true;
+
+    const auto result = ImageProcessor{}.process({job, destinationPath, false});
+    QVERIFY2(result.succeeded, qPrintable(result.errorMessage));
+    const auto exportedMetadata = ImageProcessor::readMetadata(destinationPath);
+    QCOMPARE(exportedMetadata.description, job.metadata.description);
+    QCOMPARE(exportedMetadata.artist, job.metadata.artist);
+    QCOMPARE(exportedMetadata.copyright, job.metadata.copyright);
+    QCOMPARE(exportedMetadata.comment, job.metadata.comment);
+    QVERIFY(ImageProcessor::readMetadata(sourcePath).isEmpty());
 }
 
 void ImageProcessorTest::savesACopyWithoutChangingTheOriginal()
