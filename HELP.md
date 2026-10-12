@@ -31,7 +31,7 @@ Right-click a queued image for:
 - Changing the target resolution while several images are selected applies it to all selected images. If selected images currently use different sizes, the menu shows **Mixed resolutions**.
 - **Zoom** changes only the current image. Drag the image on the canvas to position its crop. You can also use the mouse wheel over the canvas to zoom.
 - **Reset** returns the zoom to 100%.
-- **Output quality** controls JPEG and WebP compression for the current image. Lower values usually produce smaller files; PNG exports remain lossless.
+- **Output quality** uses a slider to control JPEG and WebP compression for the current image; Reset returns it to 95%. The heading identifies the active format. For PNG sources it shows **PNG compression** and disables the quality slider because PNG size is unaffected by that setting. Indexed PNG sources retain palette compression instead of being expanded into much larger true-colour files. The size display shows the original file size and asynchronously renders an estimated output for the current format, crop, resolution, and quality.
 - **Image attributes** shows the selected image's Description, Artist, Copyright, and Comment metadata. Edits remain staged with that image and are written to the exported copy.
 - The scale information warns when an image must be enlarged and helps indicate likely output quality.
 

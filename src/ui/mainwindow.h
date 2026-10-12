@@ -16,6 +16,8 @@ class QListWidget;
 class QPushButton;
 class QSlider;
 class QSpinBox;
+class QTimer;
+class QToolButton;
 class QAction;
 
 namespace papercutter {
@@ -54,6 +56,7 @@ private:
     void updateCurrentZoomFromControl();
     void updateCurrentOutputQuality();
     void updateCurrentMetadataFromControls();
+    void scheduleOutputSizeEstimate();
     void syncResolutionControlsToSelection();
     void updateQualityLabel();
 
@@ -70,10 +73,17 @@ private:
     QLineEdit *m_copyright{nullptr};
     QLineEdit *m_comment{nullptr};
     QSlider *m_zoom{nullptr};
-    QSpinBox *m_outputQuality{nullptr};
+    QLabel *m_outputQualityHeading{nullptr};
+    QSlider *m_outputQuality{nullptr};
+    QLabel *m_outputQualityValue{nullptr};
+    QToolButton *m_resetQualityButton{nullptr};
+    QLabel *m_fileSizeLabel{nullptr};
     QLabel *m_qualityLabel{nullptr};
     QLabel *m_sourceLabel{nullptr};
     QAction *m_toggleMenuAction{nullptr};
+    QTimer *m_outputEstimateTimer{nullptr};
+    quint64 m_outputEstimateGeneration{0};
+    bool m_outputEstimateRunning{false};
     bool m_updatingControls{false};
 };
 

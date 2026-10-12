@@ -11,10 +11,13 @@ All notable user-facing changes to LGL Papercutter are recorded here.
 - Gap-aware sequential filenames for single-image and batch exports.
 - Editable Description, Artist, Copyright, and Comment image attributes that
   remain staged per image and are written to exported copies.
-- Per-image JPEG and WebP output-quality controls for reducing exported file sizes.
+- Per-image JPEG and WebP output-quality controls with live source and estimated
+  output file sizes.
 
 ### Fixed
 
+- Preserved palette compression for indexed PNG sources instead of expanding
+  slightly scaled images into very large true-colour PNG files.
 - Selected and labelled the system primary monitor as the default target, and
   refreshed that default when the primary monitor changes.
 - Allowed source builds with Qt 6.4, including Ubuntu 24.04 and Linux Mint 22.

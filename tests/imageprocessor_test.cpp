@@ -18,6 +18,7 @@ private slots:
     void fillsTargetWithoutGaps();
     void writesEditedMetadataToExport();
     void lowerJpegQualityReducesFileSize();
+    void keepsIndexedPngOutputsPaletteCompressed();
     void savesACopyWithoutChangingTheOriginal();
     void refusesToReplaceTheOriginal();
 };
@@ -134,6 +135,46 @@ void ImageProcessorTest::lowerJpegQualityReducesFileSize()
     const auto lowResult = ImageProcessor{}.process({job, lowQualityPath, false});
     QVERIFY2(lowResult.succeeded, qPrintable(lowResult.errorMessage));
     QVERIFY(QFileInfo(lowQualityPath).size() < QFileInfo(highQualityPath).size());
+    const qint64 estimatedSize = ImageProcessor::estimateOutputSize(job, QStringLiteral("jpg"));
+    QVERIFY(estimatedSize > 0);
+    QCOMPARE(estimatedSize, QFileInfo(lowQualityPath).size());
+}
+
+void ImageProcessorTest::keepsIndexedPngOutputsPaletteCompressed()
+{
+    if (!ImageProcessor::isBackendAvailable())
+        QSKIP("ImageMagick is not available");
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString sourcePath = directory.filePath(QStringLiteral("indexed.png"));
+    const QString destinationPath = directory.filePath(QStringLiteral("output.png"));
+    QImage source(512, 256, QImage::Format_Indexed8);
+    QVector<QRgb> palette;
+    palette.reserve(256);
+    for (int value = 0; value < 256; ++value)
+        palette.push_back(qRgb(value, (value * 3) % 256, (value * 7) % 256));
+    source.setColorTable(palette);
+    for (int y = 0; y < source.height(); ++y) {
+        for (int x = 0; x < source.width(); ++x)
+            source.setPixel(x, y, (x * 17 + y * 31) % 256);
+    }
+    QVERIFY(source.save(sourcePath));
+
+    ImageJob job;
+    job.sourcePath = sourcePath;
+    job.sourceSize = source.size();
+    job.composition.targetSize = {800, 256};
+    job.composition.zoom = 1.001 / job.composition.baseScaleFor(job.sourceSize);
+    const auto result = ImageProcessor{}.process({job, destinationPath, false});
+    QVERIFY2(result.succeeded, qPrintable(result.errorMessage));
+
+    const QImage output(destinationPath);
+    QCOMPARE(output.size(), job.composition.targetSize);
+    QFile outputFile(destinationPath);
+    QVERIFY(outputFile.open(QIODevice::ReadOnly));
+    const QByteArray header = outputFile.read(26);
+    QCOMPARE(header.size(), 26);
+    QCOMPARE(static_cast<unsigned char>(header.at(25)), static_cast<unsigned char>(3));
 }
 
 void ImageProcessorTest::savesACopyWithoutChangingTheOriginal()

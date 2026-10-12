@@ -8,6 +8,7 @@
 #include <QSet>
 #include <QStandardPaths>
 #include <QTemporaryFile>
+#include <QTemporaryDir>
 #include <cmath>
 #include <filesystem>
 
@@ -26,6 +27,17 @@ constexpr MetadataField metadataFields[] = {
     {"Exif.Image.Copyright", &ImageMetadata::copyright},
     {"Exif.Photo.UserComment", &ImageMetadata::comment},
 };
+
+bool isIndexedPng(const QString &path)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+    const QByteArray header = file.read(26);
+    static const QByteArray pngSignature("\x89PNG\r\n\x1a\n", 8);
+    return header.size() == 26 && header.startsWith(pngSignature)
+        && static_cast<unsigned char>(header.at(25)) == 3;
+}
 
 QString metadataValue(const QString &output, const QString &key)
 {
@@ -131,6 +143,24 @@ ImageMetadata ImageProcessor::readMetadata(const QString &path)
     return metadata;
 }
 
+qint64 ImageProcessor::estimateOutputSize(const ImageJob &job, const QString &suffix)
+{
+    static const QSet<QString> supportedExtensions{
+        QStringLiteral("jpg"), QStringLiteral("jpeg"),
+        QStringLiteral("png"), QStringLiteral("webp")};
+    const QString normalizedSuffix = suffix.toLower();
+    if (!supportedExtensions.contains(normalizedSuffix))
+        return -1;
+
+    QTemporaryDir directory;
+    if (!directory.isValid())
+        return -1;
+    const QString outputPath = directory.filePath(
+        QStringLiteral("estimate.") + normalizedSuffix);
+    const ProcessingResult result = ImageProcessor{}.process({job, outputPath, false});
+    return result.succeeded ? QFileInfo(outputPath).size() : -1;
+}
+
 ProcessingResult ImageProcessor::process(const ProcessingRequest &request) const
 {
     const ImageJob &job = request.job;
@@ -210,8 +240,13 @@ ProcessingResult ImageProcessor::process(const ProcessingRequest &request) const
                   << QStringLiteral("-quality") << QString::number(job.outputQuality);
     else if (outputSuffix == QStringLiteral("webp"))
         arguments << QStringLiteral("-quality") << QString::number(job.outputQuality);
-    else if (outputSuffix == QStringLiteral("png"))
+    else if (outputSuffix == QStringLiteral("png")) {
+        if (isIndexedPng(job.sourcePath)) {
+            arguments << QStringLiteral("-colors") << QStringLiteral("256")
+                      << QStringLiteral("-define") << QStringLiteral("png:color-type=3");
+        }
         arguments << QStringLiteral("-define") << QStringLiteral("png:compression-level=9");
+    }
     arguments << temporaryPath;
 
     QProcess process;

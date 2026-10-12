@@ -46,6 +46,7 @@
 #include <QSplitter>
 #include <QStatusBar>
 #include <QTextBrowser>
+#include <QTimer>
 #include <QToolBar>
 #include <QToolButton>
 #include <QTreeWidget>
@@ -60,6 +61,30 @@
 namespace papercutter {
 
 namespace {
+
+QString formatFileSize(const qint64 bytes)
+{
+    if (bytes < 0)
+        return QStringLiteral("Unavailable");
+    if (bytes < 1024)
+        return QStringLiteral("%1 B").arg(bytes);
+    if (bytes < 1024 * 1024)
+        return QStringLiteral("%1 KiB").arg(bytes / 1024.0, 0, 'f', 1);
+    if (bytes < 1024LL * 1024 * 1024)
+        return QStringLiteral("%1 MiB").arg(bytes / (1024.0 * 1024), 0, 'f', 2);
+    return QStringLiteral("%1 GiB").arg(bytes / (1024.0 * 1024 * 1024), 0, 'f', 2);
+}
+
+QString outputFormatName(const QString &suffix)
+{
+    if (suffix == QStringLiteral("jpg") || suffix == QStringLiteral("jpeg"))
+        return QStringLiteral("JPEG");
+    if (suffix == QStringLiteral("webp"))
+        return QStringLiteral("WebP");
+    if (suffix == QStringLiteral("png"))
+        return QStringLiteral("PNG");
+    return suffix.toUpper();
+}
 
 QString fileSha256(const QString &path)
 {
@@ -359,17 +384,69 @@ void MainWindow::buildUi()
     zoomRow->addWidget(resetZoomButton);
     controlsLayout->addLayout(zoomRow);
 
+    controlsLayout->addSpacing(12);
+    m_outputQualityHeading = new QLabel(QStringLiteral("<b>Output quality</b>"), controls);
+    controlsLayout->addWidget(m_outputQualityHeading);
     auto *outputQualityRow = new QHBoxLayout;
-    outputQualityRow->addWidget(new QLabel(QStringLiteral("Output quality"), controls));
-    m_outputQuality = new QSpinBox(controls);
+    m_outputQuality = new QSlider(Qt::Horizontal, controls);
     m_outputQuality->setRange(1, 100);
     m_outputQuality->setValue(95);
-    m_outputQuality->setSuffix(QStringLiteral("%"));
     m_outputQuality->setEnabled(false);
     m_outputQuality->setToolTip(
         QStringLiteral("JPEG and WebP only. Lower quality usually creates smaller files."));
-    outputQualityRow->addWidget(m_outputQuality);
+    outputQualityRow->addWidget(m_outputQuality, 1);
+    m_outputQualityValue = new QLabel(QStringLiteral("95%"), controls);
+    m_outputQualityValue->setMinimumWidth(38);
+    m_outputQualityValue->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_outputQualityValue->setEnabled(false);
+    outputQualityRow->addWidget(m_outputQualityValue);
+    m_resetQualityButton = new QToolButton(controls);
+    m_resetQualityButton->setText(QStringLiteral("Reset"));
+    m_resetQualityButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_resetQualityButton->setToolTip(QStringLiteral("Reset output quality to 95%"));
+    m_resetQualityButton->setEnabled(false);
+    outputQualityRow->addWidget(m_resetQualityButton);
     controlsLayout->addLayout(outputQualityRow);
+    m_fileSizeLabel = new QLabel(QStringLiteral("Add an image to compare file sizes."), controls);
+    m_fileSizeLabel->setWordWrap(true);
+    controlsLayout->addWidget(m_fileSizeLabel);
+
+    m_outputEstimateTimer = new QTimer(this);
+    m_outputEstimateTimer->setSingleShot(true);
+    m_outputEstimateTimer->setInterval(350);
+    connect(m_outputEstimateTimer, &QTimer::timeout, this, [this] {
+        if (m_outputEstimateRunning) {
+            m_outputEstimateTimer->start();
+            return;
+        }
+        const int row = m_queue->currentRow();
+        if (row < 0 || row >= m_jobs.size())
+            return;
+        const ImageJob job = m_jobs[row];
+        const QString suffix = QFileInfo(job.sourcePath).suffix().toLower();
+        const quint64 generation = m_outputEstimateGeneration;
+        m_outputEstimateRunning = true;
+        auto *watcher = new QFutureWatcher<qint64>(this);
+        connect(watcher, &QFutureWatcher<qint64>::finished, this,
+                [this, watcher, generation, sourcePath = job.sourcePath, suffix] {
+            const qint64 estimatedBytes = watcher->result();
+            watcher->deleteLater();
+            m_outputEstimateRunning = false;
+            const int currentRow = m_queue->currentRow();
+            if (generation != m_outputEstimateGeneration
+                || currentRow < 0 || currentRow >= m_jobs.size()
+                || m_jobs[currentRow].sourcePath != sourcePath)
+                return;
+            const qint64 sourceBytes = QFileInfo(sourcePath).size();
+            m_fileSizeLabel->setText(
+                QStringLiteral("Original file size: %1 · Estimated %2 output: %3")
+                    .arg(formatFileSize(sourceBytes), outputFormatName(suffix),
+                         formatFileSize(estimatedBytes)));
+        });
+        watcher->setFuture(QtConcurrent::run([job, suffix] {
+            return ImageProcessor::estimateOutputSize(job, suffix);
+        }));
+    });
 
     m_qualityLabel = new QLabel(QStringLiteral("Add an image to see scale information."), controls);
     m_qualityLabel->setWordWrap(true);
@@ -402,8 +479,13 @@ void MainWindow::buildUi()
             this, &MainWindow::applyTargetResolutionToSelection);
     connect(m_zoom, &QSlider::valueChanged,
             this, &MainWindow::updateCurrentZoomFromControl);
-    connect(m_outputQuality, &QSpinBox::valueChanged,
-            this, &MainWindow::updateCurrentOutputQuality);
+    connect(m_outputQuality, &QSlider::valueChanged, this, [this](const int value) {
+        m_outputQualityValue->setText(QStringLiteral("%1%").arg(value));
+        updateCurrentOutputQuality();
+    });
+    connect(m_resetQualityButton, &QToolButton::clicked, this, [this] {
+        m_outputQuality->setValue(95);
+    });
     for (QLineEdit *field : {m_description, m_artist, m_copyright, m_comment}) {
         connect(field, &QLineEdit::textEdited,
                 this, &MainWindow::updateCurrentMetadataFromControls);
@@ -634,7 +716,10 @@ void MainWindow::removeJobRows(const QSet<int> &rows)
 
     if (m_jobs.isEmpty()) {
         m_canvas->setImage({});
+        m_outputQualityHeading->setText(QStringLiteral("<b>Output quality</b>"));
         m_outputQuality->setEnabled(false);
+        m_outputQualityValue->setEnabled(false);
+        m_resetQualityButton->setEnabled(false);
         m_metadataGroup->setEnabled(false);
         m_description->clear();
         m_artist->clear();
@@ -1020,7 +1105,10 @@ void MainWindow::loadCurrentJob(const int row)
     if (row < 0 || row >= m_jobs.size()) {
         m_canvas->setImage({});
         m_sourceLabel->setText(QStringLiteral("Source: no image selected"));
+        m_outputQualityHeading->setText(QStringLiteral("<b>Output quality</b>"));
         m_outputQuality->setEnabled(false);
+        m_outputQualityValue->setEnabled(false);
+        m_resetQualityButton->setEnabled(false);
         m_metadataGroup->setEnabled(false);
         m_description->clear();
         m_artist->clear();
@@ -1047,7 +1135,14 @@ void MainWindow::loadCurrentJob(const int row)
     m_height->setValue(job.composition.targetSize.height());
     m_zoom->setValue(qRound(job.composition.zoom * 100.0));
     m_outputQuality->setValue(job.outputQuality);
-    m_outputQuality->setEnabled(true);
+    const QString suffix = QFileInfo(job.sourcePath).suffix().toLower();
+    const bool qualityApplies = suffix != QStringLiteral("png");
+    m_outputQualityHeading->setText(qualityApplies
+        ? QStringLiteral("<b>Output quality (%1)</b>").arg(outputFormatName(suffix))
+        : QStringLiteral("<b>PNG compression</b>"));
+    m_outputQuality->setEnabled(qualityApplies);
+    m_outputQualityValue->setEnabled(qualityApplies);
+    m_resetQualityButton->setEnabled(qualityApplies);
     m_description->setText(job.metadata.description);
     m_artist->setText(job.metadata.artist);
     m_copyright->setText(job.metadata.copyright);
@@ -1099,6 +1194,7 @@ void MainWindow::updateCurrentOutputQuality()
     if (row < 0 || row >= m_jobs.size())
         return;
     m_jobs[row].outputQuality = m_outputQuality->value();
+    updateQualityLabel();
 }
 
 void MainWindow::updateCurrentMetadataFromControls()
@@ -1169,6 +1265,9 @@ void MainWindow::updateQualityLabel()
     const int row = m_queue->currentRow();
     if (row < 0 || row >= m_jobs.size()) {
         m_qualityLabel->setText(QStringLiteral("Add an image to see scale information."));
+        m_fileSizeLabel->setText(QStringLiteral("Add an image to compare file sizes."));
+        ++m_outputEstimateGeneration;
+        m_outputEstimateTimer->stop();
         return;
     }
 
@@ -1178,6 +1277,22 @@ void MainWindow::updateQualityLabel()
         ? QStringLiteral(" — enlargement may look soft") : QString();
     m_qualityLabel->setText(QStringLiteral("Effective scale: %1×%2")
                                 .arg(scale, 0, 'f', 2).arg(warning));
+    scheduleOutputSizeEstimate();
+}
+
+void MainWindow::scheduleOutputSizeEstimate()
+{
+    const int row = m_queue->currentRow();
+    if (row < 0 || row >= m_jobs.size())
+        return;
+    ++m_outputEstimateGeneration;
+    const ImageJob &job = m_jobs[row];
+    const QString suffix = QFileInfo(job.sourcePath).suffix().toLower();
+    m_fileSizeLabel->setText(
+        QStringLiteral("Original file size: %1 · Estimated %2 output: calculating…")
+            .arg(formatFileSize(QFileInfo(job.sourcePath).size()),
+                 outputFormatName(suffix)));
+    m_outputEstimateTimer->start();
 }
 
 } // namespace papercutter

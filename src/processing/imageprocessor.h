@@ -26,6 +26,7 @@ public:
     static QString backendExecutable();
     static QString metadataExecutable();
     static ImageMetadata readMetadata(const QString &path);
+    static qint64 estimateOutputSize(const ImageJob &job, const QString &suffix);
     ProcessingResult process(const ProcessingRequest &request) const;
 };
 

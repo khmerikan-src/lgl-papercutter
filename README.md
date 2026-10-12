@@ -54,7 +54,7 @@ confirmation.
 |---|---|
 | **Visual composition** | Preview the exact target shape and reposition the image by dragging |
 | **Zoom control** | Choose how tightly the wallpaper is cropped |
-| **Output quality** | Reduce JPEG and WebP file sizes with a staged per-image quality setting |
+| **Output quality** | Reduce JPEG and WebP file sizes and preview the estimated output size |
 | **Resolution targets** | Use detected displays, presets, or custom width and height |
 | **Staged compositions** | Retain an independent resolution, crop, position, and zoom for every queued image |
 | **Image attributes** | View and edit Description, Artist, Copyright, and Comment metadata per image |
