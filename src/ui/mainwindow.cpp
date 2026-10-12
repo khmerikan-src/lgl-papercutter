@@ -69,8 +69,11 @@ QString fileSha256(const QString &path)
 
 struct DestinationNumbering {
     bool foundNumberedFile{false};
+    qulonglong lowestNumber{0};
     qulonglong highestNumber{0};
+    qulonglong nextCandidate{0};
     qsizetype paddingWidth{0};
+    QSet<qulonglong> usedNumbers;
 };
 
 DestinationNumbering inspectDestinationNumbering(const QString &folder)
@@ -86,15 +89,35 @@ DestinationNumbering inspectDestinationNumbering(const QString &folder)
         const qulonglong number = stem.toULongLong(&converted);
         if (!converted)
             continue;
-        if (!numbering.foundNumberedFile || number > numbering.highestNumber) {
+        if (!numbering.foundNumberedFile) {
             numbering.foundNumberedFile = true;
+            numbering.lowestNumber = number;
             numbering.highestNumber = number;
-            numbering.paddingWidth = stem.size();
-        } else if (number == numbering.highestNumber) {
-            numbering.paddingWidth = std::max(numbering.paddingWidth, stem.size());
+        } else {
+            numbering.lowestNumber = std::min(numbering.lowestNumber, number);
+            numbering.highestNumber = std::max(numbering.highestNumber, number);
         }
+        numbering.paddingWidth = std::max(numbering.paddingWidth, stem.size());
+        numbering.usedNumbers.insert(number);
     }
+    numbering.nextCandidate = numbering.lowestNumber;
     return numbering;
+}
+
+bool takeNextAvailableNumber(DestinationNumbering &numbering, qulonglong &number)
+{
+    if (!numbering.foundNumberedFile)
+        return false;
+    while (numbering.usedNumbers.contains(numbering.nextCandidate)) {
+        if (numbering.nextCandidate == std::numeric_limits<qulonglong>::max())
+            return false;
+        ++numbering.nextCandidate;
+    }
+    number = numbering.nextCandidate;
+    numbering.usedNumbers.insert(number);
+    if (numbering.nextCandidate != std::numeric_limits<qulonglong>::max())
+        ++numbering.nextCandidate;
+    return true;
 }
 
 bool confirmExportMappings(QWidget *parent, const QVector<ProcessingRequest> &requests)
@@ -145,23 +168,28 @@ bool chooseSequentialNumbering(QWidget *parent, const DestinationNumbering &numb
                                bool &useSequentialNumbering)
 {
     useSequentialNumbering = false;
-    if (!numbering.foundNumberedFile
-        || numbering.highestNumber == std::numeric_limits<qulonglong>::max())
+    if (!numbering.foundNumberedFile)
+        return true;
+
+    DestinationNumbering preview = numbering;
+    qulonglong firstAvailableNumber = 0;
+    if (!takeNextAvailableNumber(preview, firstAvailableNumber))
         return true;
 
     const QString highest = QString::number(numbering.highestNumber).rightJustified(
         numbering.paddingWidth, QLatin1Char('0'));
-    const QString firstOutput = QString::number(numbering.highestNumber + 1).rightJustified(
+    const QString firstOutput = QString::number(firstAvailableNumber).rightJustified(
         numbering.paddingWidth, QLatin1Char('0'));
 
     QMessageBox options(parent);
     options.setIcon(QMessageBox::Question);
     options.setWindowTitle(QStringLiteral("File numbering"));
-    options.setText(QStringLiteral("The highest numbered file in this folder is %1.")
-                        .arg(highest));
+    options.setText(firstAvailableNumber <= numbering.highestNumber
+        ? QStringLiteral("The highest numbered file is %1, and the first gap is %2.")
+              .arg(highest, firstOutput)
+        : QStringLiteral("The highest numbered file in this folder is %1.").arg(highest));
     auto *renumber = new QCheckBox(
-        QStringLiteral("Continue numbering from %1 (start new files at %2)")
-            .arg(highest, firstOutput),
+        QStringLiteral("Number exported files sequentially (start at %1)").arg(firstOutput),
         &options);
     renumber->setChecked(true);
     options.setCheckBox(renumber);
@@ -631,13 +659,33 @@ void MainWindow::saveAsCurrent()
     const QFileInfo source(m_jobs[row].sourcePath);
     const QString initialFolder = m_settings.lastSaveAsFolder().isEmpty()
         ? source.absolutePath() : m_settings.lastSaveAsFolder();
-    const QString destination = QFileDialog::getSaveFileName(
+    QString destination = QFileDialog::getSaveFileName(
         this, QStringLiteral("Save processed image as"),
         QDir(initialFolder).filePath(source.fileName()),
         QStringLiteral("Images (*.jpg *.jpeg *.png *.webp)"), nullptr,
         QFileDialog::DontConfirmOverwrite);
     if (destination.isEmpty())
         return;
+
+    DestinationNumbering numbering = inspectDestinationNumbering(
+        QFileInfo(destination).absolutePath());
+    bool useSequentialNumbering = false;
+    if (!chooseSequentialNumbering(this, numbering, useSequentialNumbering))
+        return;
+    if (useSequentialNumbering) {
+        qulonglong nextNumber = 0;
+        if (!takeNextAvailableNumber(numbering, nextNumber)) {
+            QMessageBox::warning(this, QStringLiteral("File numbering unavailable"),
+                                 QStringLiteral("No numeric filename is available."));
+            return;
+        }
+        const QFileInfo selectedDestination(destination);
+        const QString stem = QString::number(nextNumber).rightJustified(
+            numbering.paddingWidth, QLatin1Char('0'));
+        const QString outputName = selectedDestination.suffix().isEmpty()
+            ? stem : stem + QLatin1Char('.') + selectedDestination.suffix();
+        destination = selectedDestination.dir().filePath(outputName);
+    }
     if (QFileInfo(destination).absoluteFilePath() == source.absoluteFilePath()) {
         QMessageBox::information(this, QStringLiteral("Choose another destination"),
             QStringLiteral("Save As never replaces the original image. Choose a different "
@@ -697,11 +745,10 @@ void MainWindow::saveSelectedAs()
     QVector<ProcessingRequest> requests;
     QStringList skipped;
     QSet<QString> plannedDestinations;
-    const DestinationNumbering numbering = inspectDestinationNumbering(folder);
+    DestinationNumbering numbering = inspectDestinationNumbering(folder);
     bool useSequentialNumbering = false;
     if (!chooseSequentialNumbering(this, numbering, useSequentialNumbering))
         return;
-    qulonglong nextNumber = numbering.highestNumber;
     bool cancelled = false;
     for (const int row : rows) {
         if (row < 0 || row >= m_jobs.size())
@@ -709,12 +756,12 @@ void MainWindow::saveSelectedAs()
         const QFileInfo source(m_jobs[row].sourcePath);
         QString outputName = source.fileName();
         if (useSequentialNumbering) {
-            if (nextNumber == std::numeric_limits<qulonglong>::max()) {
+            qulonglong nextNumber = 0;
+            if (!takeNextAvailableNumber(numbering, nextNumber)) {
                 skipped << QStringLiteral("%1: destination numbering is exhausted")
                                .arg(source.fileName());
                 continue;
             }
-            ++nextNumber;
             const QString stem = QString::number(nextNumber).rightJustified(
                 numbering.paddingWidth, QLatin1Char('0'));
             outputName = source.suffix().isEmpty()

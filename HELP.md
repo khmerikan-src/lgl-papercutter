@@ -37,7 +37,7 @@ All changes remain staged per image until you export them.
 
 ## Saving one image
 
-Select one image and choose **Save As…**. Pick a new filename and location in the desktop file picker. Papercutter will not overwrite the original source. If another file already uses that destination, you decide whether to replace it.
+Select one image and choose **Save As…**. Pick a new filename and location in the desktop file picker. If the destination folder contains numerically named files, Papercutter offers to use the first missing number or continue the sequence. Papercutter will not overwrite the original source. If another file already uses that destination, you decide whether to replace it.
 
 A confirmation window shows the exact source and destination before the export starts.
 
@@ -45,7 +45,7 @@ A confirmation window shows the exact source and destination before the export s
 
 Select multiple queue entries and choose **Save As…**, then choose a destination folder.
 
-If that folder contains files whose complete names before the extension are numbers, Papercutter finds the highest number and offers to continue the sequence. For example, if `0312.jpg` is the highest numbered file, new exports can begin at `0313`. Existing zero padding is retained. If no numbered filename exists, each image keeps its current filename.
+If that folder contains files whose complete names before the extension are numbers, Papercutter fills gaps between the lowest and highest numbers before continuing the sequence. For example, files `0312.jpg` and `0314.jpg` make the next export `0313`; after the gaps are filled, numbering continues at `0315`. Existing zero padding is retained. If no numbered filename exists, each image keeps its current filename.
 
 Before anything is written, the confirmation window lists every source filename beside its planned destination. Drag the divider between the two columns when longer filenames need more room.
 

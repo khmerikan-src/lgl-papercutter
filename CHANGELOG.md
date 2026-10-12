@@ -8,6 +8,7 @@ All notable user-facing changes to LGL Papercutter are recorded here.
 
 - A **Reset** button beside the zoom slider to return the zoom to 100%.
 - A 5120 × 1440 super-ultrawide resolution preset.
+- Gap-aware sequential filenames for single-image and batch exports.
 
 ### Fixed
 
