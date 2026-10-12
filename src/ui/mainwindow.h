@@ -32,7 +32,7 @@ protected:
 
 private:
     void buildUi();
-    void populateResolutionTargets();
+    void populateResolutionTargets(bool selectPrimary = false);
     void addImages();
     void addFolder();
     void enqueuePaths(const QStringList &paths);

@@ -7,9 +7,12 @@ All notable user-facing changes to LGL Papercutter are recorded here.
 ### Added
 
 - A **Reset** button beside the zoom slider to return the zoom to 100%.
+- A 5120 × 1440 super-ultrawide resolution preset.
 
 ### Fixed
 
+- Selected and labelled the system primary monitor as the default target, and
+  refreshed that default when the primary monitor changes.
 - Allowed source builds with Qt 6.4, including Ubuntu 24.04 and Linux Mint 22.
 - Added support for ImageMagick 6's `convert` command while retaining support
   for ImageMagick 7's `magick` command.

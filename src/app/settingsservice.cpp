@@ -55,10 +55,14 @@ QVector<QSize> SettingsService::resolutionPresets() const
             {2560, 1080},
             {2560, 1440},
             {3440, 1440},
+            {5120, 1440},
             {3840, 2160},
             {1080, 2560},
             {1440, 3440},
         };
+    const QSize superUltrawide(5120, 1440);
+    if (!presets.contains(superUltrawide))
+        presets.push_back(superUltrawide);
     return presets;
 }
 

@@ -181,7 +181,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
     buildUi();
     setAcceptDrops(true);
-    populateResolutionTargets();
+    populateResolutionTargets(true);
+    connect(qApp, &QGuiApplication::primaryScreenChanged, this,
+            [this](QScreen *) { populateResolutionTargets(m_jobs.isEmpty()); });
     setWindowTitle(QStringLiteral("LGL Papercutter"));
     resize(1280, 800);
     statusBar()->showMessage(QStringLiteral("Ready"));
@@ -365,19 +367,54 @@ void MainWindow::buildUi()
     setMenuBarVisible(m_settings.menuBarVisible());
 }
 
-void MainWindow::populateResolutionTargets()
+void MainWindow::populateResolutionTargets(const bool selectPrimary)
 {
+    const QSize previousTarget(m_width->value(), m_height->value());
+    QScreen *primaryScreen = QGuiApplication::primaryScreen();
+    const QList<QScreen *> screens = QGuiApplication::screens();
+    const QSignalBlocker blocker(m_resolution);
     m_resolution->clear();
-    for (QScreen *screen : QGuiApplication::screens()) {
+
+    const auto addScreen = [this, primaryScreen](QScreen *screen) {
         const QSize pixels = screen->size() * screen->devicePixelRatio();
-        m_resolution->addItem(QStringLiteral("%1 — %2 × %3")
+        const QString primaryLabel = screen == primaryScreen
+            ? QStringLiteral(" (Primary)") : QString();
+        m_resolution->addItem(QStringLiteral("%1%2 — %3 × %4")
                                   .arg(screen->name())
+                                  .arg(primaryLabel)
                                   .arg(pixels.width())
                                   .arg(pixels.height()), pixels);
+    };
+
+    if (primaryScreen && screens.contains(primaryScreen))
+        addScreen(primaryScreen);
+    for (QScreen *screen : screens) {
+        if (screen != primaryScreen)
+            addScreen(screen);
     }
     for (const QSize &size : m_settings.resolutionPresets()) {
         m_resolution->addItem(QStringLiteral("Preset — %1 × %2")
                                   .arg(size.width()).arg(size.height()), size);
+    }
+
+    const QSize primarySize = primaryScreen
+        ? primaryScreen->size() * primaryScreen->devicePixelRatio() : QSize();
+    const QSize target = selectPrimary && primarySize.isValid()
+        ? primarySize : previousTarget;
+    int targetIndex = m_resolution->findData(target);
+    if (targetIndex < 0 && target.isValid()) {
+        m_resolution->insertItem(0, QStringLiteral("Current — %1 × %2")
+                                      .arg(target.width()).arg(target.height()), target);
+        targetIndex = 0;
+    }
+    if (targetIndex >= 0)
+        m_resolution->setCurrentIndex(targetIndex);
+
+    if (target.isValid()) {
+        m_updatingControls = true;
+        m_width->setValue(target.width());
+        m_height->setValue(target.height());
+        m_updatingControls = false;
     }
 }
 
