@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/com/linuxgamerlife/papercutter">
+    <file>style.css</file>
+    <!-- Resolved from the repository root through a second -sourcedir. -->
+    <file>HELP.md</file>
+    <!-- The official app icon, shown in the header bar and About. -->
+    <file alias="lgl-papercutter.png">packaging/icons/hicolor/512x512/apps/lgl-papercutter.png</file>
+  </gresource>
+</gresources>
