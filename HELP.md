@@ -30,6 +30,7 @@ Right-click a queued image for:
 - The **width × height** boxes set a custom output size.
 - Changing the target resolution while several images are selected applies it to all selected images. If selected images currently use different sizes, the menu shows **Mixed resolutions**.
 - **Zoom** changes only the current image. Drag the image on the canvas to position its crop. You can also use the mouse wheel over the canvas to zoom.
+- **Reset** returns the zoom to 100%.
 - The scale information warns when an image must be enlarged and helps indicate likely output quality.
 
 All changes remain staged per image until you export them.

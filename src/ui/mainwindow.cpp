@@ -292,10 +292,17 @@ void MainWindow::buildUi()
 
     controlsLayout->addSpacing(12);
     controlsLayout->addWidget(new QLabel(QStringLiteral("<b>Zoom</b>"), controls));
+    auto *zoomRow = new QHBoxLayout;
     m_zoom = new QSlider(Qt::Horizontal, controls);
     m_zoom->setRange(5, 2000);
     m_zoom->setValue(100);
-    controlsLayout->addWidget(m_zoom);
+    zoomRow->addWidget(m_zoom, 1);
+    auto *resetZoomButton = new QToolButton(controls);
+    resetZoomButton->setText(QStringLiteral("Reset"));
+    resetZoomButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    resetZoomButton->setToolTip(QStringLiteral("Reset zoom to 100%"));
+    zoomRow->addWidget(resetZoomButton);
+    controlsLayout->addLayout(zoomRow);
 
     m_qualityLabel = new QLabel(QStringLiteral("Add an image to see scale information."), controls);
     m_qualityLabel->setWordWrap(true);
@@ -328,6 +335,9 @@ void MainWindow::buildUi()
             this, &MainWindow::applyTargetResolutionToSelection);
     connect(m_zoom, &QSlider::valueChanged,
             this, &MainWindow::updateCurrentZoomFromControl);
+    connect(resetZoomButton, &QToolButton::clicked, this, [this] {
+        m_zoom->setValue(100);
+    });
     connect(m_resolution, &QComboBox::currentIndexChanged, this, [this](int index) {
         if (m_updatingControls || index < 0)
             return;

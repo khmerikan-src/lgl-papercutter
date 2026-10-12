@@ -4,6 +4,10 @@ All notable user-facing changes to LGL Papercutter are recorded here.
 
 ## Unreleased
 
+### Added
+
+- A **Reset** button beside the zoom slider to return the zoom to 100%.
+
 ### Fixed
 
 - Allowed source builds with Qt 6.4, including Ubuntu 24.04 and Linux Mint 22.
