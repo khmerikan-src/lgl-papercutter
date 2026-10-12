@@ -33,6 +33,7 @@ struct ImageJob {
     QString sourcePath;
     QSize sourceSize;
     CompositionState composition;
+    int outputQuality{95};
     ImageMetadata metadata;
     bool metadataEdited{false};
     JobStatus status{JobStatus::AwaitingReview};

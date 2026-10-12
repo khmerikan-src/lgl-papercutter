@@ -2,6 +2,7 @@
 
 #include <QFile>
 #include <QImage>
+#include <QRandomGenerator>
 #include <QTemporaryDir>
 #include <QTest>
 
@@ -16,6 +17,7 @@ private slots:
     void packagedBackendOverridesHostDiscovery();
     void fillsTargetWithoutGaps();
     void writesEditedMetadataToExport();
+    void lowerJpegQualityReducesFileSize();
     void savesACopyWithoutChangingTheOriginal();
     void refusesToReplaceTheOriginal();
 };
@@ -101,6 +103,37 @@ void ImageProcessorTest::writesEditedMetadataToExport()
     QCOMPARE(exportedMetadata.copyright, job.metadata.copyright);
     QCOMPARE(exportedMetadata.comment, job.metadata.comment);
     QVERIFY(ImageProcessor::readMetadata(sourcePath).isEmpty());
+}
+
+void ImageProcessorTest::lowerJpegQualityReducesFileSize()
+{
+    if (!ImageProcessor::isBackendAvailable())
+        QSKIP("ImageMagick is not available");
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString sourcePath = directory.filePath(QStringLiteral("source.png"));
+    const QString highQualityPath = directory.filePath(QStringLiteral("high.jpg"));
+    const QString lowQualityPath = directory.filePath(QStringLiteral("low.jpg"));
+    QImage source(512, 512, QImage::Format_RGB32);
+    QRandomGenerator random(2026);
+    for (int y = 0; y < source.height(); ++y) {
+        for (int x = 0; x < source.width(); ++x)
+            source.setPixel(x, y, random.generate());
+    }
+    QVERIFY(source.save(sourcePath));
+
+    ImageJob job;
+    job.sourcePath = sourcePath;
+    job.sourceSize = source.size();
+    job.composition.targetSize = source.size();
+    job.outputQuality = 95;
+    const auto highResult = ImageProcessor{}.process({job, highQualityPath, false});
+    QVERIFY2(highResult.succeeded, qPrintable(highResult.errorMessage));
+
+    job.outputQuality = 40;
+    const auto lowResult = ImageProcessor{}.process({job, lowQualityPath, false});
+    QVERIFY2(lowResult.succeeded, qPrintable(lowResult.errorMessage));
+    QVERIFY(QFileInfo(lowQualityPath).size() < QFileInfo(highQualityPath).size());
 }
 
 void ImageProcessorTest::savesACopyWithoutChangingTheOriginal()

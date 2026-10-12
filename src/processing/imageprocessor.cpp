@@ -139,6 +139,9 @@ ProcessingResult ImageProcessor::process(const ProcessingRequest &request) const
     if (!job.composition.isValid())
         return {false, job.sourcePath, {},
                 QStringLiteral("validation"), QStringLiteral("The composition is invalid.")};
+    if (job.outputQuality < 1 || job.outputQuality > 100)
+        return {false, job.sourcePath, {}, QStringLiteral("validation"),
+                QStringLiteral("Output quality must be between 1 and 100.")};
     if (!QFileInfo::exists(job.sourcePath))
         return {false, job.sourcePath, {},
                 QStringLiteral("validation"), QStringLiteral("The source image does not exist.")};
@@ -204,9 +207,9 @@ ProcessingResult ImageProcessor::process(const ProcessingRequest &request) const
 
     if (outputSuffix == QStringLiteral("jpg") || outputSuffix == QStringLiteral("jpeg"))
         arguments << QStringLiteral("-sampling-factor") << QStringLiteral("4:4:4")
-                  << QStringLiteral("-quality") << QStringLiteral("95");
+                  << QStringLiteral("-quality") << QString::number(job.outputQuality);
     else if (outputSuffix == QStringLiteral("webp"))
-        arguments << QStringLiteral("-quality") << QStringLiteral("95");
+        arguments << QStringLiteral("-quality") << QString::number(job.outputQuality);
     else if (outputSuffix == QStringLiteral("png"))
         arguments << QStringLiteral("-define") << QStringLiteral("png:compression-level=9");
     arguments << temporaryPath;

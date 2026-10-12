@@ -359,6 +359,18 @@ void MainWindow::buildUi()
     zoomRow->addWidget(resetZoomButton);
     controlsLayout->addLayout(zoomRow);
 
+    auto *outputQualityRow = new QHBoxLayout;
+    outputQualityRow->addWidget(new QLabel(QStringLiteral("Output quality"), controls));
+    m_outputQuality = new QSpinBox(controls);
+    m_outputQuality->setRange(1, 100);
+    m_outputQuality->setValue(95);
+    m_outputQuality->setSuffix(QStringLiteral("%"));
+    m_outputQuality->setEnabled(false);
+    m_outputQuality->setToolTip(
+        QStringLiteral("JPEG and WebP only. Lower quality usually creates smaller files."));
+    outputQualityRow->addWidget(m_outputQuality);
+    controlsLayout->addLayout(outputQualityRow);
+
     m_qualityLabel = new QLabel(QStringLiteral("Add an image to see scale information."), controls);
     m_qualityLabel->setWordWrap(true);
     controlsLayout->addWidget(m_qualityLabel);
@@ -390,6 +402,8 @@ void MainWindow::buildUi()
             this, &MainWindow::applyTargetResolutionToSelection);
     connect(m_zoom, &QSlider::valueChanged,
             this, &MainWindow::updateCurrentZoomFromControl);
+    connect(m_outputQuality, &QSpinBox::valueChanged,
+            this, &MainWindow::updateCurrentOutputQuality);
     for (QLineEdit *field : {m_description, m_artist, m_copyright, m_comment}) {
         connect(field, &QLineEdit::textEdited,
                 this, &MainWindow::updateCurrentMetadataFromControls);
@@ -620,6 +634,7 @@ void MainWindow::removeJobRows(const QSet<int> &rows)
 
     if (m_jobs.isEmpty()) {
         m_canvas->setImage({});
+        m_outputQuality->setEnabled(false);
         m_metadataGroup->setEnabled(false);
         m_description->clear();
         m_artist->clear();
@@ -1005,6 +1020,7 @@ void MainWindow::loadCurrentJob(const int row)
     if (row < 0 || row >= m_jobs.size()) {
         m_canvas->setImage({});
         m_sourceLabel->setText(QStringLiteral("Source: no image selected"));
+        m_outputQuality->setEnabled(false);
         m_metadataGroup->setEnabled(false);
         m_description->clear();
         m_artist->clear();
@@ -1030,6 +1046,8 @@ void MainWindow::loadCurrentJob(const int row)
     m_width->setValue(job.composition.targetSize.width());
     m_height->setValue(job.composition.targetSize.height());
     m_zoom->setValue(qRound(job.composition.zoom * 100.0));
+    m_outputQuality->setValue(job.outputQuality);
+    m_outputQuality->setEnabled(true);
     m_description->setText(job.metadata.description);
     m_artist->setText(job.metadata.artist);
     m_copyright->setText(job.metadata.copyright);
@@ -1071,6 +1089,16 @@ void MainWindow::updateCurrentZoomFromControl()
     m_jobs[row].composition.zoom = m_zoom->value() / 100.0;
     m_canvas->setComposition(m_jobs[row].composition);
     updateQualityLabel();
+}
+
+void MainWindow::updateCurrentOutputQuality()
+{
+    if (m_updatingControls)
+        return;
+    const int row = m_queue->currentRow();
+    if (row < 0 || row >= m_jobs.size())
+        return;
+    m_jobs[row].outputQuality = m_outputQuality->value();
 }
 
 void MainWindow::updateCurrentMetadataFromControls()

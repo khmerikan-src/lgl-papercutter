@@ -11,6 +11,7 @@ All notable user-facing changes to LGL Papercutter are recorded here.
 - Gap-aware sequential filenames for single-image and batch exports.
 - Editable Description, Artist, Copyright, and Comment image attributes that
   remain staged per image and are written to exported copies.
+- Per-image JPEG and WebP output-quality controls for reducing exported file sizes.
 
 ### Fixed
 

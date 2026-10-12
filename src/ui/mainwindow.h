@@ -52,6 +52,7 @@ private:
     void loadCurrentJob(int row);
     void applyTargetResolutionToSelection();
     void updateCurrentZoomFromControl();
+    void updateCurrentOutputQuality();
     void updateCurrentMetadataFromControls();
     void syncResolutionControlsToSelection();
     void updateQualityLabel();
@@ -69,6 +70,7 @@ private:
     QLineEdit *m_copyright{nullptr};
     QLineEdit *m_comment{nullptr};
     QSlider *m_zoom{nullptr};
+    QSpinBox *m_outputQuality{nullptr};
     QLabel *m_qualityLabel{nullptr};
     QLabel *m_sourceLabel{nullptr};
     QAction *m_toggleMenuAction{nullptr};
