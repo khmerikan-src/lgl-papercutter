@@ -81,11 +81,11 @@ The current release is **0.4.0**.
 
 ### Recommended — Fedora COPR
 
-Enable the [LGL Papercutter COPR](https://copr.fedorainfracloud.org/coprs/linuxgamerlife/lgl-papercutter/)
+Enable the [LGL Toolkit COPR](https://copr.fedorainfracloud.org/coprs/linuxgamerlife/lgl-toolkit/)
 and install the application:
 
 ```bash
-sudo dnf copr enable linuxgamerlife/lgl-papercutter
+sudo dnf copr enable linuxgamerlife/lgl-toolkit
 sudo dnf install lgl-papercutter
 ```
 
