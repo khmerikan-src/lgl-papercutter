@@ -13,7 +13,9 @@ The header bar holds the main actions:
 - **Remove Duplicates** compares image contents and removes later duplicate entries from the queue. It does not delete files.
 - **Save As…** exports the selected staged image or images as new files.
 
-The main menu (the button at the right of the header bar) also provides **Add Folder…**, **Select All**, **Remove Duplicates**, **Save As…**, **Help**, **About LGL Papercutter**, and **Quit**.
+The main menu (the button at the right of the header bar) also provides **Add Folder…**, **Select All**, **Remove Duplicates**, **Save As…**, **Use System Title Bar**, **Help**, **About LGL Papercutter**, and **Quit**. Tap `Alt` (or press `F10`) to open the main menu from the keyboard; tap `Alt` again to close it.
+
+**Use System Title Bar** lets your compositor draw the window's title bar and moves the header bar, with all its buttons and the main menu, into the window. Choose it again (or press `Ctrl+Shift+M`) to return to the app's own title bar. Papercutter remembers the choice.
 
 Keyboard shortcuts:
 
@@ -22,6 +24,8 @@ Keyboard shortcuts:
 - `Ctrl+Shift+S` — Save As
 - `Ctrl+A` — Select all queue entries (while the queue has focus)
 - `Delete` — Remove the selected entries from the queue (while the queue has focus)
+- `Alt` (tap) or `F10` — Open or close the main menu
+- `Ctrl+Shift+M` — Use System Title Bar (on or off)
 - `F1` — Help
 - `Ctrl+Q` — Quit
 

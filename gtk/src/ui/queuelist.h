@@ -59,6 +59,8 @@ public:
     void selectOnly(int position);
     void selectRows(const std::vector<int> &rows);
     void selectAll();
+    // Moves keyboard focus to the list; does nothing while the queue is empty.
+    void focusList();
 
     sigc::signal<void()> &signalCurrentChanged() { return m_currentChanged; }
     sigc::signal<void()> &signalSelectionChanged() { return m_selectionChanged; }

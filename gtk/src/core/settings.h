@@ -26,6 +26,11 @@ public:
     std::vector<Size> resolutionPresets() const;
     void setResolutionPresets(const std::vector<Size> &presets);
 
+    // Whether the compositor draws the title bar (server-side decorations) and the header
+    // bar sits inside the window instead.
+    bool systemTitleBar() const;
+    void setSystemTitleBar(bool enabled);
+
     const std::string &path() const { return m_path; }
 
 private:

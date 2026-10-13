@@ -2,6 +2,26 @@
 
 All notable user-facing changes to LGL Papercutter are recorded here.
 
+## 0.4.1 — 2026-10-13
+
+### Added
+
+- **Use System Title Bar** in the main menu (`Ctrl+Shift+M`) lets the
+  compositor draw the title bar; the header bar, with all its buttons and the
+  main menu, then sits inside the window. The choice is saved in
+  `~/.config/lgl-papercutter/settings.ini`.
+- Tapping `Alt` opens and closes the main menu.
+
+### Changed
+
+- Papercutter now follows the LGL GTK Desktop Application Standard shared with
+  LGL Emoji Picker.
+- The app icon is installed at 48, 64, 128 and 256 px instead of only 512 px.
+- The repository root builds the GTK app (`cmake -B build`); the Qt sources are
+  kept for reference only and are no longer built.
+- The Save As confirmation window has its own header bar, and the Save As
+  button tooltip names its shortcut.
+
 ## 0.4.0 — 2026-10-12
 
 ### Changed

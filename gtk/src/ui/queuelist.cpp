@@ -104,6 +104,8 @@ QueueList::QueueList()
 {
     add_css_class("pc-card");
     add_css_class("flush");
+    // Clip the list to the card's rounded corners.
+    set_overflow(Gtk::Overflow::HIDDEN);
     set_size_request(240, -1);
 
     auto head = Gtk::make_managed<Gtk::Box>(Gtk::Orientation::HORIZONTAL, 8);
@@ -271,6 +273,12 @@ void QueueList::selectRows(const std::vector<int> &rows)
 void QueueList::selectAll()
 {
     m_selection->select_all();
+}
+
+void QueueList::focusList()
+{
+    if (size() > 0)
+        m_view.grab_focus();
 }
 
 void QueueList::setupRow(const Glib::RefPtr<Gtk::ListItem> &listItem)

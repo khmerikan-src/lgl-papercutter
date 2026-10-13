@@ -6,6 +6,7 @@
 #include "ui/helpwindow.h"
 #include "ui/themewatcher.h"
 
+#include <gdk/gdkkeysyms.h>
 #include <gdkmm/display.h>
 #include <gdkmm/monitor.h>
 #include <gdkmm/surface.h>
@@ -18,11 +19,10 @@
 #include <glibmm/miscutils.h>
 #include <gtkmm/button.h>
 #include <gtkmm/droptarget.h>
+#include <gtkmm/eventcontrollerkey.h>
 #include <gtkmm/filedialog.h>
 #include <gtkmm/filefilter.h>
-#include <gtkmm/headerbar.h>
 #include <gtkmm/image.h>
-#include <gtkmm/menubutton.h>
 #include <gtkmm/overlay.h>
 #include <gtkmm/paned.h>
 
@@ -126,6 +126,11 @@ Glib::RefPtr<Gio::ListStore<Gtk::FileFilter>> imageFilters()
     return filters;
 }
 
+bool isAlt(const guint keyval)
+{
+    return keyval == GDK_KEY_Alt_L || keyval == GDK_KEY_Alt_R;
+}
+
 Glib::RefPtr<Gdk::Texture> appIcon()
 {
     static const auto icon = Gdk::Texture::create_from_resource(
@@ -136,7 +141,8 @@ Glib::RefPtr<Gdk::Texture> appIcon()
 } // namespace
 
 Window::Window(const Glib::RefPtr<Gtk::Application> &application)
-    : m_noticeBox(Gtk::Orientation::HORIZONTAL)
+    : m_content(Gtk::Orientation::VERTICAL)
+    , m_noticeBox(Gtk::Orientation::HORIZONTAL)
     , m_export(*this, m_settings,
                [this](const std::string &text, NoticeKind kind, unsigned int timeoutMs) {
                    notify(text, kind, timeoutMs);
@@ -151,6 +157,10 @@ Window::Window(const Glib::RefPtr<Gtk::Application> &application)
     buildHeader();
     buildBody();
     buildActions(application);
+    applyTitleBar(m_settings.systemTitleBar());
+    // The open menu is a separate surface that receives its own key events.
+    watchAltTap(*this);
+    watchAltTap(*m_menuButton->get_popover());
 
     m_sidebar.setAttributesAvailable(!ImageProcessor::metadataExecutable().empty());
     m_canvas.clearImage("Add an image to begin composing");
@@ -247,8 +257,6 @@ void Window::on_realize()
 
 void Window::buildHeader()
 {
-    auto *header = Gtk::make_managed<Gtk::HeaderBar>();
-
     auto *brand = Gtk::make_managed<Gtk::Box>(Gtk::Orientation::HORIZONTAL, 10);
     auto *icon = Gtk::make_managed<Gtk::Image>(appIcon());
     icon->set_pixel_size(28);
@@ -258,9 +266,9 @@ void Window::buildHeader()
     wordmark->add_css_class("wordmark");
     brand->append(*wordmark);
     brand->set_margin_end(12);
-    header->pack_start(*brand);
+    m_header.pack_start(*brand);
     // The wordmark is the title; keep the centre empty.
-    header->set_title_widget(*Gtk::make_managed<Gtk::Box>());
+    m_header.set_title_widget(*Gtk::make_managed<Gtk::Box>());
 
     const struct {
         const char *label;
@@ -277,7 +285,7 @@ void Window::buildHeader()
         auto *button = Gtk::make_managed<Gtk::Button>(spec.label);
         button->set_action_name(spec.action);
         button->set_tooltip_text(spec.tooltip);
-        header->pack_start(*button);
+        m_header.pack_start(*button);
     }
 
     auto menu = Gio::Menu::create();
@@ -290,6 +298,9 @@ void Window::buildHeader()
     queue->append("Remove Duplicates", "win.remove-duplicates");
     queue->append("Save As…", "win.save-as");
     menu->append_section(queue);
+    auto view = Gio::Menu::create();
+    view->append("Use System Title Bar", "win.system-title-bar");
+    menu->append_section(view);
     auto help = Gio::Menu::create();
     help->append("Help", "win.help");
     help->append("About LGL Papercutter", "win.about");
@@ -297,21 +308,51 @@ void Window::buildHeader()
     auto quit = Gio::Menu::create();
     quit->append("Quit", "app.quit");
     menu->append_section(quit);
-    auto *menuButton = Gtk::make_managed<Gtk::MenuButton>();
-    menuButton->set_icon_name("open-menu-symbolic");
-    menuButton->set_menu_model(menu);
-    menuButton->set_tooltip_text("Main menu");
-    menuButton->set_primary(true);
-    header->pack_end(*menuButton);
+    m_menuButton = Gtk::make_managed<Gtk::MenuButton>();
+    m_menuButton->set_icon_name("open-menu-symbolic");
+    m_menuButton->set_menu_model(menu);
+    m_menuButton->set_tooltip_text("Main menu");
+    m_menuButton->set_primary(true);
+    m_header.pack_end(*m_menuButton);
 
     auto *save = Gtk::make_managed<Gtk::Button>("Save As…");
     save->set_action_name("win.save-as");
     save->add_css_class("pc-primary");
     save->add_css_class("suggested-action");
-    save->set_tooltip_text("Export the selected staged images as new files");
-    header->pack_end(*save);
+    save->set_tooltip_text("Export the selected staged images as new files (Ctrl+Shift+S)");
+    m_header.pack_end(*save);
+}
 
-    set_titlebar(*header);
+// The header bar is either the window's title bar (client-side decorations, with the window
+// buttons) or, when the compositor draws the title bar, the first row of the window.
+// Switching between the two needs the window unrealized, so it is briefly hidden. gtkmm
+// removes a hidden window from its application, which would quit; the application is held
+// and the window re-added.
+void Window::applyTitleBar(const bool system)
+{
+    const bool realized = get_realized();
+    const Glib::RefPtr<Gtk::Application> application = get_application();
+    if (realized) {
+        application->hold();
+        set_visible(false);
+        Gtk::Widget::unrealize();
+    }
+    if (system) {
+        unset_titlebar();
+        m_header.set_show_title_buttons(false);
+        m_content.prepend(m_header);
+    } else {
+        if (m_header.get_parent())
+            m_content.remove(m_header);
+        m_header.set_show_title_buttons(true);
+        set_titlebar(m_header);
+    }
+    if (realized) {
+        set_application(application);
+        present();
+        m_queue.focusList();
+        application->release();
+    }
 }
 
 void Window::buildBody()
@@ -348,7 +389,9 @@ void Window::buildBody()
     auto *overlay = Gtk::make_managed<Gtk::Overlay>();
     overlay->set_child(*outer);
     overlay->add_overlay(m_noticeRevealer);
-    set_child(*overlay);
+    overlay->set_vexpand(true);
+    m_content.append(*overlay);
+    set_child(m_content);
 }
 
 void Window::buildActions(const Glib::RefPtr<Gtk::Application> &application)
@@ -365,11 +408,25 @@ void Window::buildActions(const Glib::RefPtr<Gtk::Application> &application)
     };
     m_duplicatesAction =
         add_action("remove-duplicates", sigc::mem_fun(*this, &Window::removeDuplicates));
+    auto titleBar = add_action_bool("system-title-bar", false);
+    titleBar->signal_activate().connect([titleBar](const Glib::VariantBase &) {
+        bool system = false;
+        titleBar->get_state(system);
+        titleBar->change_state(!system);
+    });
+    titleBar->signal_change_state().connect([this, titleBar](const Glib::VariantBase &value) {
+        const bool system = Glib::VariantBase::cast_dynamic<Glib::Variant<bool>>(value).get();
+        titleBar->set_state(value);
+        m_settings.setSystemTitleBar(system);
+        applyTitleBar(system);
+    });
+    titleBar->set_state(Glib::Variant<bool>::create(m_settings.systemTitleBar()));
 
     application->set_accel_for_action("win.add-images", "<Control>o");
     application->set_accel_for_action("win.add-folder", "<Control><Shift>o");
     application->set_accel_for_action("win.save-as", "<Control><Shift>s");
     application->set_accel_for_action("win.help", "F1");
+    application->set_accel_for_action("win.system-title-bar", "<Control><Shift>m");
     application->set_accel_for_action("app.quit", "<Control>q");
 }
 
@@ -408,6 +465,32 @@ void Window::notify(const std::string &text, const NoticeKind kind, const unsign
                 return false;
             },
             timeoutMs);
+}
+
+// Alt pressed and released on its own opens or closes the main menu; closing it returns
+// focus to the queue.
+void Window::watchAltTap(Gtk::Widget &widget)
+{
+    auto keys = Gtk::EventControllerKey::create();
+    keys->set_propagation_phase(Gtk::PropagationPhase::CAPTURE);
+    keys->signal_key_pressed().connect(
+        [this](guint keyval, guint, Gdk::ModifierType) {
+            m_altTapped = isAlt(keyval);
+            return false;
+        },
+        false);
+    keys->signal_key_released().connect([this](guint keyval, guint, Gdk::ModifierType) {
+        if (m_altTapped && isAlt(keyval)) {
+            if (m_menuButton->get_active()) {
+                m_menuButton->popdown();
+                // After the popover has handed focus back to the window.
+                Glib::signal_idle().connect_once([this] { m_queue.focusList(); });
+            } else
+                m_menuButton->popup();
+        }
+        m_altTapped = false;
+    });
+    widget.add_controller(keys);
 }
 
 // --- resolution targets ----------------------------------------------------------

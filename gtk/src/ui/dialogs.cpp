@@ -8,6 +8,7 @@
 #include <gtkmm/button.h>
 #include <gtkmm/columnview.h>
 #include <gtkmm/eventcontrollerkey.h>
+#include <gtkmm/headerbar.h>
 #include <gtkmm/label.h>
 #include <gtkmm/noselection.h>
 #include <gtkmm/scrolledwindow.h>
@@ -82,6 +83,12 @@ public:
         set_modal(true);
         set_default_size(820, 360);
         set_hide_on_close(true);
+
+        auto *header = Gtk::make_managed<Gtk::HeaderBar>();
+        auto *title = Gtk::make_managed<Gtk::Label>("CONFIRM SAVE AS");
+        title->add_css_class("wordmark");
+        header->set_title_widget(*title);
+        set_titlebar(*header);
 
         auto *body = Gtk::make_managed<Gtk::Box>(Gtk::Orientation::VERTICAL, 12);
         body->add_css_class("dialog-body");

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 # LGL Papercutter, GTK 4 (gtkmm) application. This is the build that is packaged; the Qt
 # sources at the repository root are kept for reference only.
-project(lgl-papercutter VERSION 0.4.0 LANGUAGES C CXX)
+project(lgl-papercutter VERSION 0.4.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -37,7 +37,7 @@ set(RESOURCE_XML ${PROJECT_SOURCE_DIR}/data/papercutter.gresource.xml)
 set(RESOURCE_C ${CMAKE_CURRENT_BINARY_DIR}/papercutter-resources.c)
 set(RESOURCE_DEPS
     ${PROJECT_SOURCE_DIR}/data/style.css
-    ${PAPERCUTTER_REPO_ROOT}/packaging/icons/hicolor/512x512/apps/lgl-papercutter.png
+    ${PAPERCUTTER_REPO_ROOT}/packaging/icons/256x256/lgl-papercutter.png
     ${PAPERCUTTER_REPO_ROOT}/HELP.md)
 add_custom_command(
     OUTPUT ${RESOURCE_C}
@@ -102,17 +102,19 @@ install(FILES ${PAPERCUTTER_REPO_ROOT}/packaging/com.linuxgamerlife.lgl-papercut
     DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 install(FILES ${PAPERCUTTER_REPO_ROOT}/packaging/com.linuxgamerlife.lgl-papercutter.metainfo.xml
     DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
-install(FILES ${PAPERCUTTER_REPO_ROOT}/packaging/icons/hicolor/512x512/apps/lgl-papercutter.png
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps)
+foreach(size 48 64 128 256)
+    install(FILES ${PAPERCUTTER_REPO_ROOT}/packaging/icons/${size}x${size}/lgl-papercutter.png
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/${size}x${size}/apps)
+endforeach()
 
 # --- tests -----------------------------------------------------------------------
 
 if(BUILD_TESTING)
-    foreach(test composition numbering processor theme)
+    foreach(test composition numbering processor settings theme)
         add_executable(${test}_test tests/${test}_test.cpp)
         target_link_libraries(${test}_test PRIVATE papercutter_gtk_core)
         add_test(NAME ${test} COMMAND ${test}_test)
     endforeach()
     # g_test_skip() reports 77 under the TAP harness.
-    set_tests_properties(composition numbering processor theme PROPERTIES SKIP_RETURN_CODE 77)
+    set_tests_properties(composition numbering processor settings theme PROPERTIES SKIP_RETURN_CODE 77)
 endif()

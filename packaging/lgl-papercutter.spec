@@ -1,6 +1,6 @@
 Name:           lgl-papercutter
-Version:        0.4.0
-Release:        3%{?dist}
+Version:        0.4.1
+Release:        1%{?dist}
 Summary:        Compose wallpapers for a chosen desktop resolution
 
 License:        MIT
@@ -9,9 +9,8 @@ URL:            https://github.com/linuxgamerlife/lgl-papercutter
 # COPR SCM builds do not require a Git tag.
 Source0:        %{name}-%{version}.tar.gz
 
-# The packaged application is the GTK 4 build in gtk/; the Qt sources at the
-# repository root are not built.
-%global _vpath_srcdir gtk
+# The root CMakeLists.txt builds the GTK 4 application in gtk/; the Qt sources
+# in src/ and tests/ are not built.
 
 BuildRequires:  cmake >= 3.20
 BuildRequires:  cmake-rpm-macros
@@ -58,9 +57,20 @@ appstream-util validate-relax --nonet \
 %{_bindir}/lgl-papercutter
 %{_datadir}/applications/com.linuxgamerlife.lgl-papercutter.desktop
 %{_datadir}/metainfo/com.linuxgamerlife.lgl-papercutter.metainfo.xml
-%{_datadir}/icons/hicolor/512x512/apps/lgl-papercutter.png
+%{_datadir}/icons/hicolor/48x48/apps/%{name}.png
+%{_datadir}/icons/hicolor/64x64/apps/%{name}.png
+%{_datadir}/icons/hicolor/128x128/apps/%{name}.png
+%{_datadir}/icons/hicolor/256x256/apps/%{name}.png
 
 %changelog
+* Tue Oct 13 2026 LinuxGamerLife - 0.4.1-1
+- Adopt the LGL GTK app standard
+- Add a system title bar mode (Ctrl+Shift+M or Use System Title Bar in the
+  main menu) that lets the compositor draw the title bar
+- Open and close the main menu by tapping Alt
+- Install the icon at 48, 64, 128 and 256 px
+- Build the GTK app from the repository root
+
 * Tue Oct 13 2026 LinuxGamerLife - 0.4.0-3
 - Draw square window corners so compositors that round and border windows
   leave no gap

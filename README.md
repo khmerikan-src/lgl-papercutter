@@ -5,7 +5,7 @@
 **A simple way to modify wallpapers to make them a better fit for your desktop.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/release-0.4.0-purple)](CHANGELOG.md)
+[![Release](https://img.shields.io/badge/release-0.4.1-purple)](CHANGELOG.md)
 [![Fedora](https://img.shields.io/badge/Fedora-44-blue?logo=fedora&logoColor=white)](https://fedoraproject.org)
 [![AppImage](https://img.shields.io/badge/AppImage-available-brightgreen?logo=appimage&logoColor=white)](https://github.com/linuxgamerlife/lgl-papercutter/releases)
 [![RPM](https://img.shields.io/badge/RPM-available-brightgreen?logo=redhat&logoColor=white)](https://github.com/linuxgamerlife/lgl-papercutter/releases)
@@ -77,7 +77,7 @@ confirmation.
 
 ## Install
 
-The current release is **0.4.0**.
+The current release is **0.4.1**.
 
 ### Recommended — Fedora COPR
 
@@ -100,6 +100,15 @@ The project can also be built directly from source.
 
 ---
 
+## What's New in 0.4.1
+
+- Optional system title bar: press `Ctrl+Shift+M` or choose **Use System Title
+  Bar** in the main menu to let your compositor draw the title bar; the header
+  bar then sits inside the window. The choice is remembered.
+- Tap `Alt` to open or close the main menu
+- The app icon is installed at 48, 64, 128 and 256 px
+- Source builds now start from the repository root
+
 ## What's New in 0.4.0
 
 - Migrated to GTK 4 for better theming and a better look on GTK desktops
@@ -116,7 +125,8 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete release history.
 
 ## Build from Source
 
-Papercutter is a GTK 4 and libadwaita application in the `gtk/` folder. It
+Papercutter is a GTK 4 and libadwaita application in the `gtk/` folder, built from the
+repository root. It
 requires gtkmm 4.20 and libadwaita 1.6 or newer, and supports both ImageMagick 7's `magick` command and ImageMagick 6's
 `convert` command. Exiv2 is used for image attributes.
 
@@ -131,18 +141,18 @@ Clone, build, and test:
 ```bash
 git clone https://github.com/linuxgamerlife/lgl-papercutter.git
 cd lgl-papercutter
-cmake -S gtk -B gtk/build -DCMAKE_BUILD_TYPE=Release
-cmake --build gtk/build -j$(nproc)
-ctest --test-dir gtk/build --output-on-failure
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j$(nproc)
+ctest --test-dir build --output-on-failure
 ```
 
 Run it directly from the build directory:
 
 ```bash
-./gtk/build/lgl-papercutter
+./build/lgl-papercutter
 ```
 
-Ubuntu 24.04 and Linux Mint 22 ship older GTK libraries and cannot build 0.4.0 from
+Ubuntu 24.04 and Linux Mint 22 ship older GTK libraries and cannot build 0.4.x from
 source. The previous Qt version (0.3.1) remains available from
 [GitHub Releases](https://github.com/linuxgamerlife/lgl-papercutter/releases).
 

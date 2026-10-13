@@ -11,7 +11,9 @@
 #include <gtkmm/aboutdialog.h>
 #include <gtkmm/applicationwindow.h>
 #include <gtkmm/box.h>
+#include <gtkmm/headerbar.h>
 #include <gtkmm/label.h>
+#include <gtkmm/menubutton.h>
 #include <gtkmm/revealer.h>
 
 #include <deque>
@@ -39,6 +41,7 @@ protected:
 
 private:
     void buildHeader();
+    void applyTitleBar(bool system);
     void buildBody();
     void buildActions(const Glib::RefPtr<Gtk::Application> &application);
     void updateActions();
@@ -72,11 +75,15 @@ private:
     Glib::RefPtr<QueueItem> currentItem() const;
 
     void notify(const std::string &text, NoticeKind kind, unsigned int timeoutMs);
+    void watchAltTap(Gtk::Widget &widget);
 
     Settings m_settings;
     QueueList m_queue;
     Canvas m_canvas;
     Sidebar m_sidebar;
+    // A member, not managed, so it survives moving between the title bar and m_content.
+    Gtk::HeaderBar m_header;
+    Gtk::Box m_content;
     Gtk::Revealer m_noticeRevealer;
     Gtk::Box m_noticeBox;
     Gtk::Label m_notice;
@@ -86,6 +93,8 @@ private:
     std::unique_ptr<Gtk::AboutDialog> m_about;
     std::vector<Glib::RefPtr<Gio::SimpleAction>> m_queueActions;
     Glib::RefPtr<Gio::SimpleAction> m_duplicatesAction;
+    Gtk::MenuButton *m_menuButton{nullptr};
+    bool m_altTapped{false};
 
     sigc::connection m_estimateTimer;
     sigc::connection m_noticeTimer;

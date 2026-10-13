@@ -126,4 +126,19 @@ void Settings::setResolutionPresets(const std::vector<Size> &presets)
     save();
 }
 
+bool Settings::systemTitleBar() const
+{
+    try {
+        return m_file->get_boolean("window", "systemTitleBar");
+    } catch (const Glib::Error &) {
+        return false;
+    }
+}
+
+void Settings::setSystemTitleBar(const bool enabled)
+{
+    m_file->set_boolean("window", "systemTitleBar", enabled);
+    save();
+}
+
 } // namespace papercutter
