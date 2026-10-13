@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
-# Standalone GTK 4 (gtkmm) build of LGL Papercutter. Not part of the root Qt build.
-project(lgl-papercutter VERSION 0.3.1 LANGUAGES C CXX)
+# LGL Papercutter, GTK 4 (gtkmm) application. This is the build that is packaged; the Qt
+# sources at the repository root are kept for reference only.
+project(lgl-papercutter VERSION 0.4.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,7 +24,8 @@ if(PAPERCUTTER_ENABLE_SANITIZERS AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GTKMM REQUIRED IMPORTED_TARGET gtkmm-4.0>=4.10)
+pkg_check_modules(GTKMM REQUIRED IMPORTED_TARGET gtkmm-4.0>=4.20)
+pkg_check_modules(ADWAITA REQUIRED IMPORTED_TARGET libadwaita-1>=1.6)
 find_program(GLIB_COMPILE_RESOURCES glib-compile-resources REQUIRED)
 
 set(PAPERCUTTER_GTK_VERSION ${PROJECT_VERSION})
@@ -93,9 +95,15 @@ add_executable(lgl-papercutter
 )
 target_compile_definitions(lgl-papercutter PRIVATE
     PAPERCUTTER_VERSION="${PAPERCUTTER_GTK_VERSION}")
-target_link_libraries(lgl-papercutter PRIVATE papercutter_gtk_core)
+target_link_libraries(lgl-papercutter PRIVATE papercutter_gtk_core PkgConfig::ADWAITA)
 
 install(TARGETS lgl-papercutter RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES ${PAPERCUTTER_REPO_ROOT}/packaging/com.linuxgamerlife.lgl-papercutter.desktop
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(FILES ${PAPERCUTTER_REPO_ROOT}/packaging/com.linuxgamerlife.lgl-papercutter.metainfo.xml
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
+install(FILES ${PAPERCUTTER_REPO_ROOT}/packaging/icons/hicolor/512x512/apps/lgl-papercutter.png
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps)
 
 # --- tests -----------------------------------------------------------------------
 

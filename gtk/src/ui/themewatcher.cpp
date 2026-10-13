@@ -1,5 +1,6 @@
 #include "ui/themewatcher.h"
 
+#include <adwaita.h>
 #include <giomm/file.h>
 #include <giomm/settingsschemasource.h>
 #include <glibmm/fileutils.h>
@@ -35,14 +36,22 @@ bool endsWith(const std::string &text, const std::string &suffix)
         && text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
+void styleManagerChanged(GObject *, GParamSpec *, gpointer watcher)
+{
+    static_cast<ThemeWatcher *>(watcher)->queueChange();
+}
+
 } // namespace
 
 void installApplicationStylesheet()
 {
+    adw_init();
     auto provider = Gtk::CssProvider::create();
     provider->signal_parsing_error().connect(
         [](const Glib::RefPtr<const Gtk::CssSection> &section, const Glib::Error &error) {
-            g_warning("style.css:%u: %s", section ? static_cast<unsigned>(section->get_start_location().get_lines() + 1) : 0u,
+            g_warning("style.css:%u: %s",
+                      section ? static_cast<unsigned>(section->get_start_location().get_lines() + 1)
+                              : 0u,
                       error.what());
         });
     provider->load_from_resource("/com/linuxgamerlife/papercutter/style.css");
@@ -53,11 +62,17 @@ void installApplicationStylesheet()
 ThemeWatcher::ThemeWatcher(Gtk::Window &window)
     : m_window(window)
     , m_userProvider(createProvider(GTK_STYLE_PROVIDER_PRIORITY_USER))
-    , m_paletteProvider(createProvider(GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 1))
-    , m_fontProvider(createProvider(GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 2))
+    , m_fontProvider(createProvider(GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 1))
 {
     watch();
     apply(false);
+}
+
+ThemeWatcher::~ThemeWatcher()
+{
+    AdwStyleManager *manager = adw_style_manager_get_default();
+    for (const gulong handler : m_styleHandlers)
+        g_signal_handler_disconnect(manager, handler);
 }
 
 std::string ThemeWatcher::monoFamily() const
@@ -67,12 +82,11 @@ std::string ThemeWatcher::monoFamily() const
 
 void ThemeWatcher::watch()
 {
-    auto settings = Gtk::Settings::get_default();
-    for (const char *name : {"gtk-application-prefer-dark-theme", "gtk-interface-color-scheme",
-                             "gtk-theme-name", "gtk-font-name"}) {
-        if (g_object_class_find_property(G_OBJECT_GET_CLASS(settings->gobj()), name))
-            settings->connect_property_changed(name, sigc::mem_fun(*this, &ThemeWatcher::queue));
-    }
+    // Dark mode and accent colour, as libadwaita resolves them from the desktop.
+    AdwStyleManager *manager = adw_style_manager_get_default();
+    for (const char *signal : {"notify::dark", "notify::accent-color"})
+        m_styleHandlers.push_back(
+            g_signal_connect(manager, signal, G_CALLBACK(styleManagerChanged), this));
     auto source = Gio::SettingsSchemaSource::get_default();
     if (source && source->lookup("org.gnome.desktop.interface", true)) {
         m_interface = Gio::Settings::create("org.gnome.desktop.interface");
@@ -134,32 +148,38 @@ std::string ThemeWatcher::interfaceString(const char *key) const
     return m_interface->get_string(key);
 }
 
-theme::Theme ThemeWatcher::read() const
+void ThemeWatcher::followDesktopWithoutPortal()
 {
+    // libadwaita takes dark mode from the settings portal. Without one, fall back to GNOME's
+    // color-scheme, settings.ini, or a "-dark" theme name.
+    AdwStyleManager *manager = adw_style_manager_get_default();
+    if (adw_style_manager_get_system_supports_color_schemes(manager))
+        return;
     auto settings = Gtk::Settings::get_default();
     std::string themeName = settings->property_gtk_theme_name().get_value();
     std::transform(themeName.begin(), themeName.end(), themeName.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    const bool preferDark = interfaceString("color-scheme") == "prefer-dark"
+    const bool dark = interfaceString("color-scheme") == "prefer-dark"
         || settings->property_gtk_application_prefer_dark_theme().get_value()
-        || settings->property_gtk_interface_color_scheme().get_value()
-            == Gtk::InterfaceColorScheme::DARK
         || endsWith(themeName, "-dark");
+    adw_style_manager_set_color_scheme(manager, dark ? ADW_COLOR_SCHEME_FORCE_DARK
+                                                     : ADW_COLOR_SCHEME_DEFAULT);
+}
 
+theme::Theme ThemeWatcher::read() const
+{
     theme::Theme current;
     current.colors = theme::gtkColors(theme::gtkCssPaths(Glib::get_user_config_dir()));
-    current.dark = theme::isDark(current.colors, preferDark);
-    std::string font = interfaceString("font-name");
-    if (font.empty())
-        font = settings->property_gtk_font_name().get_value();
-    current.font = theme::fontFamily(font);
+    // A palette in gtk.css decides by its background; otherwise libadwaita's dark mode.
+    current.dark = theme::isDark(current.colors,
+                                 adw_style_manager_get_dark(adw_style_manager_get_default()));
     current.monoFont = theme::fontFamily(interfaceString("monospace-font-name"));
-    current.accentName = interfaceString("accent-color");
     return current;
 }
 
 void ThemeWatcher::apply(const bool reloadUserCss)
 {
+    followDesktopWithoutPortal();
     m_theme = read();
     if (reloadUserCss) {
         const std::string userCss =
@@ -169,7 +189,6 @@ void ThemeWatcher::apply(const bool reloadUserCss)
         else
             m_userProvider->load_from_string("");
     }
-    m_paletteProvider->load_from_string(theme::paletteStylesheet(m_theme));
     m_fontProvider->load_from_string(theme::fontStylesheet(m_theme));
     if (m_theme.dark)
         m_window.add_css_class("dark");

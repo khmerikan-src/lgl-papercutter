@@ -1,16 +1,17 @@
 /* LGL Papercutter (GTK): follows the desktop theme.
 
    The look is taken from lgl-distro-desktop-score (app/static/css/app.css). Colours come from
-   the GTK palette: the pc_* names below default to GTK's own theme colours and are replaced
-   at runtime by ThemeWatcher with the user's gtk.css palette (Noctalia and similar
-   generators), so the app re-themes live. Only the status colours are fixed, with light
-   and dark variants switched by the .dark class on the main window. Loaded at APPLICATION
-   priority, so the user's gtk.css still wins. */
+   libadwaita's named colours, which libadwaita resolves from the desktop (dark mode and
+   accent colour) and which the user's ~/.config/gtk-4.0/gtk.css overrides (Noctalia and
+   similar generators); ThemeWatcher re-reads that file when it changes, so the app
+   re-themes live. Only the status colours are fixed, with light and dark variants switched
+   by the .dark class on the main window. Loaded at APPLICATION priority, so the user's
+   gtk.css still wins. */
 
-@define-color pc_bg @theme_bg_color;
-@define-color pc_fg @theme_fg_color;
-@define-color pc_accent @theme_selected_bg_color;
-@define-color pc_on_accent @theme_selected_fg_color;
+@define-color pc_bg @window_bg_color;
+@define-color pc_fg @window_fg_color;
+@define-color pc_accent @accent_bg_color;
+@define-color pc_on_accent @accent_fg_color;
 @define-color pc_surface color-mix(in srgb, @pc_fg 4%, @pc_bg);
 @define-color pc_sunken color-mix(in srgb, @pc_fg 2%, @pc_bg);
 @define-color pc_border color-mix(in srgb, @pc_fg 16%, @pc_bg);
@@ -50,6 +51,11 @@
 }
 
 /* --- layout ----------------------------------------------------------------- */
+
+/* Square window corners (libadwaita's default is 15px). Compositors that draw their own
+   rounded borders clip the window to them; rounding here as well leaves a gap where the
+   two radii differ. */
+:root { --window-radius: 0px; }
 
 .body { padding: 12px; }
 

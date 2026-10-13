@@ -59,8 +59,11 @@ void scheduleSnapshot(const Glib::RefPtr<Gtk::Application> &application)
 
 int main(int argc, char *argv[])
 {
-    auto application = Gtk::Application::create("com.linuxgamerlife.lgl-papercutter",
-                                                Gio::Application::Flags::HANDLES_OPEN);
+    // Snapshot runs must not hand their files to an already running instance.
+    auto flags = Gio::Application::Flags::HANDLES_OPEN;
+    if (!Glib::getenv("PAPERCUTTER_GTK_SNAPSHOT").empty())
+        flags |= Gio::Application::Flags::NON_UNIQUE;
+    auto application = Gtk::Application::create("com.linuxgamerlife.lgl-papercutter", flags);
     std::unique_ptr<papercutter::Window> window;
     const auto ensureWindow = [&]() -> papercutter::Window & {
         if (!window)

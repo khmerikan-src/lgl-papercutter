@@ -2,6 +2,45 @@
 
 All notable user-facing changes to LGL Papercutter are recorded here.
 
+## 0.4.0 — 2026-10-12
+
+### Changed
+
+- Migrated from Qt to GTK 4 (gtkmm) and libadwaita for better theming and a
+  better look on GTK desktops. The packaged application is now built from `gtk/`.
+- Papercutter follows the desktop GTK theme live: the `gtk.css` colour palette
+  and its imports (such as Noctalia-generated palettes), light or dark mode,
+  the accent colour, and the monospace font. The palette applies to every
+  control whichever GTK theme is installed, and dark mode and the accent colour
+  come from the desktop, so stock GNOME and KDE setups work without a custom
+  `gtk.css`. Changes apply without restarting.
+- Redesigned the window: a header bar with the app icon and main actions, a
+  queue with thumbnails and staged resolutions, and a sidebar of Target
+  resolution, Composition, Output, and Image attributes cards.
+- The default target resolution is now the display the window opens on, since
+  GTK 4 has no primary-monitor setting.
+- Replaced the menu bar and its **Show Menu Bar** toggle with a main menu in
+  the header bar. Status messages appear briefly at the bottom of the window.
+- The Effective scale read-out shows a **SHARP**, **ENLARGED**, or **SOFT** label.
+- File numbering is now offered with **Number Sequentially** and **Keep Names**
+  buttons.
+- Settings are stored in `~/.config/lgl-papercutter/settings.ini`, so the last
+  used source and Save As folders start fresh.
+- Source builds now require gtkmm 4.20 and libadwaita 1.6 or newer (Fedora 44).
+
+### Added
+
+- Keyboard shortcuts for Add Folder (`Ctrl+Shift+O`) and Save As
+  (`Ctrl+Shift+S`).
+- Image files and folders passed on the command line, and images opened with
+  **Open With** in a file manager, are added to the queue.
+
+### Fixed
+
+- Rotated JPEG photos are no longer distorted when they are batch exported
+  without first being opened in the canvas.
+- Large folders no longer freeze the window while thumbnails and previews load.
+
 ## 0.3.1 — 2026-10-12
 
 ### Added

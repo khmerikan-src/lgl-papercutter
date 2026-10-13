@@ -7,8 +7,9 @@
 
 // Port of lgl-distro-desktop-score app/theme.py: reads the desktop's GTK 4 palette
 // (`@define-color` rules in ~/.config/gtk-4.0/gtk.css and its @imports, as written by
-// generators such as Noctalia) and turns it into the small stylesheets the app layers over
-// data/style.css. Pure functions so they can be tested without a display.
+// generators such as Noctalia) to find the files to watch and whether the palette is dark,
+// and builds the monospace font stylesheet. Pure functions so they can be tested without a
+// display.
 namespace papercutter::theme {
 
 using Colors = std::map<std::string, std::string>;
@@ -16,9 +17,7 @@ using Colors = std::map<std::string, std::string>;
 struct Theme {
     Colors colors;
     bool dark{false};
-    std::string font;
     std::string monoFont;
-    std::string accentName;
 };
 
 // The user GTK 4 stylesheet and every local file it imports, in load order.
@@ -36,13 +35,6 @@ std::optional<double> luminance(const std::string &color);
 
 // Dark when the window background is dark; otherwise follow the desktop preference.
 bool isDark(const Colors &colors, bool preferDark);
-
-// libadwaita's accent colour for GNOME's accent-color name, or "".
-std::string accentForName(const std::string &name);
-
-// `@define-color pc_*` overrides for the palette names used by data/style.css. Colours the
-// theme does not define keep the stylesheet's defaults.
-std::string paletteStylesheet(const Theme &theme);
 
 // Font-family rules for the monospace classes, preferring the desktop monospace font.
 std::string fontStylesheet(const Theme &theme);

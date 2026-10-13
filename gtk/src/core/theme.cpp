@@ -180,57 +180,6 @@ bool isDark(const Colors &colors, const bool preferDark)
     return value ? *value < 0.5 : preferDark;
 }
 
-std::string accentForName(const std::string &name)
-{
-    static const std::map<std::string, std::string> accents{
-        {"blue", "#3584e4"}, {"teal", "#2190a4"}, {"green", "#3a944a"},
-        {"yellow", "#c88800"}, {"orange", "#ed5b00"}, {"red", "#e62d42"},
-        {"pink", "#d56199"}, {"purple", "#9141ac"}, {"slate", "#6f8396"},
-    };
-    const auto found = accents.find(name);
-    return found == accents.end() ? std::string() : found->second;
-}
-
-std::string paletteStylesheet(const Theme &theme)
-{
-    const Colors &c = theme.colors;
-    const auto pick = [&c](std::initializer_list<const char *> names) -> std::string {
-        for (const char *name : names) {
-            const auto found = c.find(name);
-            if (found != c.end())
-                return found->second;
-        }
-        return {};
-    };
-
-    std::ostringstream css;
-    const auto define = [&css](const char *name, const std::string &value) {
-        css << "@define-color " << name << ' ' << value << ";\n";
-    };
-    const std::string background = pick({"window_bg_color", "theme_bg_color"});
-    const std::string text = pick({"window_fg_color", "theme_fg_color"});
-    if (!background.empty() && !text.empty()) {
-        define("pc_bg", background);
-        define("pc_fg", text);
-        const std::string card = pick({"card_bg_color"});
-        define("pc_surface", card.empty()
-                   ? "color-mix(in srgb, " + text + " 4%, " + background + ")" : card);
-    }
-    std::string accent = pick({"accent_bg_color", "theme_selected_bg_color", "accent_color"});
-    std::string onAccent = pick({"accent_fg_color", "theme_selected_fg_color"});
-    if (accent.empty()) {
-        accent = accentForName(theme.accentName);
-        if (!accent.empty())
-            onAccent = "#ffffff";
-    }
-    if (!accent.empty()) {
-        define("pc_accent", accent);
-        if (!onAccent.empty())
-            define("pc_on_accent", onAccent);
-    }
-    return css.str();
-}
-
 std::string fontStylesheet(const Theme &theme)
 {
     const std::string mono = theme.monoFont.empty()

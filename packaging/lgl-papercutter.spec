@@ -1,6 +1,6 @@
 Name:           lgl-papercutter
-Version:        0.3.1
-Release:        1%{?dist}
+Version:        0.4.0
+Release:        3%{?dist}
 Summary:        Compose wallpapers for a chosen desktop resolution
 
 License:        MIT
@@ -9,17 +9,21 @@ URL:            https://github.com/linuxgamerlife/lgl-papercutter
 # COPR SCM builds do not require a Git tag.
 Source0:        %{name}-%{version}.tar.gz
 
+# The packaged application is the GTK 4 build in gtk/; the Qt sources at the
+# repository root are not built.
+%global _vpath_srcdir gtk
+
 BuildRequires:  cmake >= 3.20
 BuildRequires:  cmake-rpm-macros
 BuildRequires:  gcc-c++
 BuildRequires:  ninja-build
-BuildRequires:  qt6-qtbase-devel >= 6.5
+BuildRequires:  pkgconfig(gtkmm-4.0) >= 4.20
+BuildRequires:  pkgconfig(libadwaita-1) >= 1.6
+BuildRequires:  glib2-devel
 BuildRequires:  desktop-file-utils
 BuildRequires:  libappstream-glib
 BuildRequires:  ImageMagick
 BuildRequires:  exiv2
-Requires:       qt6-qtbase >= 6.5
-Requires:       qt6-qtimageformats
 Requires:       ImageMagick
 Requires:       exiv2
 
@@ -57,6 +61,22 @@ appstream-util validate-relax --nonet \
 %{_datadir}/icons/hicolor/512x512/apps/lgl-papercutter.png
 
 %changelog
+* Tue Oct 13 2026 LinuxGamerLife - 0.4.0-3
+- Draw square window corners so compositors that round and border windows
+  leave no gap
+
+* Tue Oct 13 2026 LinuxGamerLife - 0.4.0-2
+- Build with libadwaita so gtk.css palettes such as Noctalia theme every control,
+  whichever GTK theme is installed
+- Follow the desktop dark mode and accent colour, with a fallback for desktops
+  without a settings portal
+
+* Mon Oct 12 2026 LinuxGamerLife - 0.4.0-1
+- Migrate to GTK 4 (gtkmm) for better theming and look on GTK desktops
+- Use libadwaita and follow the desktop theme live: palette, light/dark, accent, fonts
+- Redesign the window with a header bar, queue thumbnails, and settings cards
+- Default to the display the window opens on and embed the official icon
+
 * Mon Oct 12 2026 LinuxGamerLife - 0.3.1-1
 - Add per-image JPEG and WebP output quality with estimated output file size
 - Add editable Description, Artist, Copyright, and Comment metadata

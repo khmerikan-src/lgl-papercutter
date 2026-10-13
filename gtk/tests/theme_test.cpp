@@ -83,26 +83,13 @@ void detectsDarkBackgrounds()
     g_assert_true(theme::isDark({}, true));
 }
 
-void buildsPaletteStylesheet()
+void buildsFontStylesheet()
 {
     theme::Theme current;
-    current.colors = {{"window_bg_color", "#101010"}, {"window_fg_color", "#eeeeee"},
-                      {"accent_bg_color", "#ff8800"}, {"accent_fg_color", "#000000"}};
-    const std::string css = theme::paletteStylesheet(current);
-    g_assert_true(css.find("@define-color pc_bg #101010;") != std::string::npos);
-    g_assert_true(css.find("@define-color pc_surface color-mix(in srgb, #eeeeee 4%, #101010);")
+    g_assert_true(theme::fontStylesheet(current).find("font-family: \"Adwaita Mono\"")
                   != std::string::npos);
-    g_assert_true(css.find("@define-color pc_accent #ff8800;") != std::string::npos);
-    g_assert_true(css.find("@define-color pc_on_accent #000000;") != std::string::npos);
-
-    theme::Theme gnome;
-    gnome.accentName = "purple";
-    const std::string fallback = theme::paletteStylesheet(gnome);
-    g_assert_true(fallback.find("pc_bg") == std::string::npos);
-    g_assert_true(fallback.find("@define-color pc_accent #9141ac;") != std::string::npos);
-
-    gnome.monoFont = "Fira \"Code\"";
-    g_assert_true(theme::fontStylesheet(gnome).find("\"Fira Code\", \"Adwaita Mono\"")
+    current.monoFont = "Fira \"Code\"";
+    g_assert_true(theme::fontStylesheet(current).find("\"Fira Code\", \"Adwaita Mono\"")
                   != std::string::npos);
 }
 
@@ -115,6 +102,6 @@ int main(int argc, char *argv[])
     g_test_add_func("/theme/resolves-named-colors", resolvesNamedColors);
     g_test_add_func("/theme/extracts-font-families", extractsFontFamilies);
     g_test_add_func("/theme/detects-dark-backgrounds", detectsDarkBackgrounds);
-    g_test_add_func("/theme/builds-palette-stylesheet", buildsPaletteStylesheet);
+    g_test_add_func("/theme/builds-font-stylesheet", buildsFontStylesheet);
     return g_test_run();
 }

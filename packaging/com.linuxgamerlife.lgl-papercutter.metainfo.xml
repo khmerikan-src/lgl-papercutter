@@ -18,6 +18,16 @@
   <url type="homepage">https://github.com/linuxgamerlife/lgl-papercutter</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.4.0" date="2026-10-12">
+      <description>
+        <p>
+          Migrates to GTK 4 for better theming and a better look on GTK desktops.
+          Papercutter now follows the desktop GTK theme live, including its colour
+          palette, light or dark mode, accent colour, and fonts, and has a
+          redesigned window with queue thumbnails and settings cards.
+        </p>
+      </description>
+    </release>
     <release version="0.3.1" date="2026-10-12">
       <description>
         <p>
