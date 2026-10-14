@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Release](https://img.shields.io/badge/release-0.4.1-purple)](CHANGELOG.md)
-[![Fedora](https://img.shields.io/badge/Fedora-44-blue?logo=fedora&logoColor=white)](https://fedoraproject.org)
+[![Arch](https://img.shields.io/badge/Arch%20Linux-179ae8?logo=archlinux&logoColor=white)](https://wiki.archlinux.org/)
 [![AppImage](https://img.shields.io/badge/AppImage-available-brightgreen?logo=appimage&logoColor=white)](https://github.com/linuxgamerlife/lgl-papercutter/releases)
 [![RPM](https://img.shields.io/badge/RPM-available-brightgreen?logo=redhat&logoColor=white)](https://github.com/linuxgamerlife/lgl-papercutter/releases)
 [![GTK](https://img.shields.io/badge/GTK-4-green?logo=gtk&logoColor=white)](https://www.gtk.org)
@@ -79,24 +79,27 @@ confirmation.
 
 The current release is **0.4.1**.
 
-### Recommended — Fedora COPR
+This fork targets **Arch Linux / CachyOS (Arch-based)**. The upstream project
+was released for Fedora; this fork keeps the same GTK 4 / libadwaita
+application and rebuilds it for Arch-based systems.
 
-Enable the [LGL Toolkit COPR](https://copr.fedorainfracloud.org/coprs/linuxgamerlife/lgl-toolkit/)
-and install the application:
+### Recommended — prebuilt AppImage
+
+Download the AppImage from [GitHub Releases](https://github.com/linuxgamerlife/lgl-papercutter/releases)
+and run it. No system dependencies are installed and no package management is
+required.
+
+### Build from source
+
+Install the build dependencies first:
 
 ```bash
-sudo dnf copr enable linuxgamerlife/lgl-toolkit
-sudo dnf install lgl-papercutter
+sudo pacman -S cmake gcc pkgconf gtkmm-4.0 libadwaita imagemagick exiv2
 ```
 
-Future releases will then be installed through normal Fedora system updates.
+Then, from the repository root, follow the [Build from Source](#build-from-source) section below.
 
-### Manual downloads
 
-RPM and AppImage release artifacts are also available from
-[GitHub Releases](https://github.com/linuxgamerlife/lgl-papercutter/releases).
-
-The project can also be built directly from source.
 
 ---
 
@@ -130,13 +133,7 @@ repository root. It
 requires gtkmm 4.20 and libadwaita 1.6 or newer, and supports both ImageMagick 7's `magick` command and ImageMagick 6's
 `convert` command. Exiv2 is used for image attributes.
 
-Install the dependencies on Fedora 44:
-
-```bash
-sudo dnf install cmake gcc-c++ gtkmm4.0-devel libadwaita-devel ImageMagick exiv2
-```
-
-Clone, build, and test:
+Install the dependencies listed in the [Install](#install) section, then clone, build, and test:
 
 ```bash
 git clone https://github.com/linuxgamerlife/lgl-papercutter.git
@@ -176,5 +173,5 @@ MIT — see [LICENSE](LICENSE) for details.
 ---
 
 <div align="center">
-Made for <a href="https://fedoraproject.org">Fedora</a> · by <a href="https://www.youtube.com/@linuxgamerlife">LinuxGamerLife</a>
+Made for <a href="https://wiki.archlinux.org/">Arch Linux</a> · by <a href="https://www.youtube.com/@linuxgamerlife">LinuxGamerLife</a>
 </div>
